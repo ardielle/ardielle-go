@@ -1,0 +1,2 @@
+type foo struct {
+   int32 x

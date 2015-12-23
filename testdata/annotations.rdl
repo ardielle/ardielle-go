@@ -1,0 +1,38 @@
+name annotations;
+
+type MyBool Bool (x_highlight, x_group="boolean");
+
+type MyInt8 Int8 (x_highlight, x_group="number");
+type MyInt16 Int16 (x_highlight, x_group="number");
+type MyInt32 Int32 (x_highlight, x_group="number");
+type MyInt64 Int64 (x_highlight, x_group="number");
+type MyFloat32 Float32 (x_highlight, x_group="number");
+type MyFloat64 Float64 (x_highlight, x_group="number");
+
+type MyBytes Bytes[8] (x_highlight, x_group="binary");
+
+type MyString String (x_highlight, x_group="text",pattern="[a-z]*");
+type MyUUID UUID (x_highlight, x_group="text");
+type MyURI URI (x_highlight, x_group="text");
+type MyTimestamp Timestamp (x_highlight, x_group="text");
+
+type MyArray Array<String> (x_highlight, x_group="collection");
+type MyMap Map<String,String> (x_highlight, x_group="collection");
+
+type MyStruct Struct (x_highlight, x_group="collection") {
+     String myField (x_highlight, x_group="field");
+     Bool myBool;
+}
+type MyStruct Struct (x_highlight, x_group="collection") {
+     closed;
+     String myField (x_highlight, x_group="field");
+     Bool myBool;
+}
+
+type MyEnum Enum (x_highlight, x_group="special") {
+    ONE // the first enum value. Annotations per value are not supported.
+    TWO
+}
+
+type MyUnion Union<MyEnum,MyInt32> (x_highlight, x_group="special");
+

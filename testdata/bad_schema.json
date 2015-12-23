@@ -1,0 +1,11 @@
+{
+    "name": "bad_schema",
+    "types": [
+        {
+            "AliasTypeDef": {
+                "type": "Int32"
+            }
+        }
+    ]
+}
+

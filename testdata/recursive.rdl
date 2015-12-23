@@ -1,0 +1,10 @@
+name rdltest
+
+type Action String;
+type Filter String;
+
+type RouteRule Struct {
+     Action action (optional); // optional action to take
+     Filter filter (optional); // optional filter
+     Array<RouteRule> rules (optional); // optional rules if filter
+}

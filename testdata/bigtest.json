@@ -1,0 +1,69 @@
+{
+    "stuff": [
+        {
+            "myName": " I am a string",
+            "myUtfname" : "姚冀清",
+            "myBool":  false,
+            "myByte": 23,
+            "myShort": 5723,
+            "myInt": 572388,
+            "myLong": 0,
+            "myFloat": 25.23,
+            "myDouble": 25.23,
+            "myIntArray": [
+                1,
+                2,
+                3
+            ],
+            "myStringArray": [
+                "abc",
+                "def",
+                "gcg"
+            ],
+            "myMap": {
+                "one": 1,
+                "two": 2,
+                "three": 3
+            },
+            "myUuid": "7829db01-a4ad-11de-0000-090000000179",
+            "myStringSubtype": "abc",
+            "myInt32Subtype": 1978,
+            "myFloat64Subtype": 3.1415926,
+            "myTime": "2012-02-29T23:59:59.123Z"
+        },
+        {
+            "myName": "Blah blah",
+            "myUtfname" : "姚清",
+            "myBool": true,
+            "myByte": 57,
+            "myShort": 2357,
+            "myInt": 134217,
+            "myLong": 12321,
+            "myFloat": 25.57,
+            "myDouble": 57.23,
+            "myIntArray": [
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            "myStringArray": [
+                "abc",
+                "def"
+            ],
+            "myMap": {
+                "one": 1,
+                "two": 2,
+                "three": 3,
+                "four": 4
+            },
+            "myUuid": "7829db01-a4ad-11de-0000-090000000179",
+            "myStringSubtype": "abc",
+            "myInt32Subtype": 1979,
+            "myFloat64Subtype": 3.1415926,
+            "myTime": "2012-02-29T23:59:59.123Z"
+        }
+    ]
+}
+

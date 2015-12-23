@@ -1,0 +1,68 @@
+#This is a legacy comment for the schema
+namespace basic.types ;
+
+//this is normal line comment
+type Options Enum {ONE, TWO, THREE}; 
+type ComplicatedOptions String (values=["a:b","c:d","e:f"]);
+
+type AlphaName String (pattern="[a-zA-Z_]+"); //one or more alpha characters
+type SimpleName String (pattern="[a-zA-Z_][a-zA-Z_0-9]*"); // alphanumeric, but starting with alpha
+type CompoundName String (pattern="({SimpleName}.)*{SimpleName}");
+type YEncoded String (pattern="[a-zA-Z0-9._%=-]*");
+type StringTest Struct {
+     SimpleName name;
+     CompoundName parent;
+     Array<SimpleName> names (optional);
+     YEncoded enc (optional);
+}
+
+type azAZ String (pattern="[a-zA-Z]+"); 
+type Year Integer (min=1000 ,max=3000);
+type Latitude Double (min=-90,max=90);
+type Pi Double (min=2.3 ,max=3.5);
+type LongNumber Long (min=500000 ,max=10000000);
+
+type MapTest Struct {
+    Map<String,Integer> locations;
+}
+
+type IntOOBTest Struct {
+    Year    myyear;
+}
+
+type NegativeNumberTest Struct {
+    Latitude mylatitude;
+}
+
+type UUIDTest Struct {
+    UUID myid;
+}
+
+type TimestampTest Struct {
+    Timestamp mytime ;
+}
+
+
+
+type Test Struct {
+    String  name;
+    String  utfname;
+    Boolean bool;
+    Boolean bool2;
+    Integer int;
+    Long    mylong;
+    Double  mydbl;
+    Array<Integer> my_int_array ;
+    Array<String> my_str_array ;
+    UUID    myuuid;
+    azAZ    myaz;
+    Year    myyear;
+    Pi      mypi;
+    LongNumber mylong;
+    Options myoptions;
+    Timestamp mytime ;
+    ComplicatedOptions co1; 
+    ComplicatedOptions co2; 
+    ComplicatedOptions co3; 
+}
+

@@ -1,0 +1,10 @@
+name test
+
+type Point Struct {
+     Int32 x;
+     Int32 y;
+}
+
+type Polyline Struct {
+     Array<Point> points;
+}

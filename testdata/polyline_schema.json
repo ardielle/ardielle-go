@@ -1,0 +1,63 @@
+{
+    "name": "tests",
+    "types": [
+        {
+            "type": "Struct",
+            "name": "Point",
+            "fields": [
+                {
+                    "name": "x",
+                    "type": "Int32"
+                },
+                {
+                    "name": "y",
+                    "type": "Int32"
+                }
+            ]
+        },
+        {
+            "type": "Struct",
+            "name": "Polyline",
+            "fields": [
+                {
+                    "name": "points",
+                    "type": "Array",
+                    "items": "Point"
+                }
+            ]
+        },
+        {
+            "type": "Struct",
+            "name": "Rect",
+            "fields": [
+                {
+                    "name": "p1",
+                    "type": "Point"
+                },
+                {
+                    "name": "p2",
+                    "type": "Point"
+                }
+            ]
+        },
+        {
+            "type": "Union",
+            "name": "Shape",
+            "variants": [
+                "Polyline",
+                "Rect"
+            ]
+        },
+        {
+            "type": "Struct",
+            "name": "Drawing",
+            "fields": [
+                {
+                    "name": "shapes",
+                    "type": "Array",
+                    "items": "Shape"
+                }
+            ]
+        }
+    ]
+}

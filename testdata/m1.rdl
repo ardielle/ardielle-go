@@ -1,0 +1,13 @@
+name rdl
+
+type MyKey string
+
+type MyMap Map<MyKey,String>;
+type MyArray Array<String>;
+
+type MyStruct Struct {
+     MyMap kv
+     Map<MyKey,Int32> kvi
+     MyArray tags
+}
+

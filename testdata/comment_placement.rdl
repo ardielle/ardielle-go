@@ -1,0 +1,14 @@
+//
+// schema comment
+//
+
+type Foo Struct {
+  // field1 comment
+  Int64 field1
+
+  // field2 comment
+  String field2
+
+  // 
+  String field3
+}

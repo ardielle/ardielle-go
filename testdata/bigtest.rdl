@@ -1,0 +1,82 @@
+name tests;
+version 1;
+
+include "names.rdl";
+
+//options comment
+type Options Enum {ONE, TWO, THREE}
+
+type ComplicatedOptions String (values=["a:b","c:d","e:f"]);
+
+//AlphaName def
+type AlphaName String (pattern="[a-zA-Z_]+"); //one or more alpha characters
+
+type YEncoded String (pattern="[a-zA-Z0-9._%=-]*");
+type StringTest Struct {
+     SimpleName name;
+     CompoundName parent;
+     Array<SimpleName> names (optional);
+     YEncoded enc (optional);
+}
+
+/* The following only work without the -pedantic flag */
+type azAZ String (pattern="[a-zA-Z]+"); 
+type TinyInt Int8;
+type SmallInt Int16;
+type RegularInt Int32;
+type LargeInt Int64;
+
+type Year Int32 (min=1000, max=3000);
+type Latitude Float64 (min=-90,max=90);
+type Pi Float64 (min=3.0 , max=3.5);
+type LongNumber Int64 (min=500000 ,max=10000000);
+
+type MapTest Struct {
+    Map<String,Int32> locations;
+}
+
+type ArrayOfInt Array<Int32> (maxsize=3);
+type MapArrayTest Struct {
+    Map<String,ArrayOfInt> locations;
+}
+
+type IntOOBTest Struct {
+    Year    theyear;
+}
+
+type NegativeNumberTest Struct {
+    Latitude mylatitude;
+}
+
+type UUIDTest Struct {
+    UUID myid;
+}
+
+type TimestampTest Struct {
+    Timestamp mytime ;
+}
+
+type BigStruct Struct {
+    String  myName
+    String  myUtfname
+    Bool myBool
+    Int8 myByte
+    Int16 myShort
+    Int32 myInt
+    Int64 myLong
+    Float32  myFloat
+    Float64  myDouble
+    Array<Int32> myIntArray
+    Array<String> myStringArray
+    Map<String,Int32> myMap
+    UUID    myUuid
+    azAZ    myStringSubtype
+    Year    myInt32Subtype
+    Pi      myFloat64Subtype
+    Timestamp myTime
+/*    Options myOptions */
+}
+
+type BigTest Struct {
+     Array<BigStruct> stuff
+}

@@ -1,0 +1,18 @@
+
+name rdl
+
+type S1 String (pattern="[a-zA-Z_][a-zA-Z_0-9]*");
+
+type S2 struct {
+   Int32 x;
+   Int32 y;
+}
+
+type S3 struct {
+   Int32 x;
+   Int32 z;
+}
+
+type U1 Union<S1,S2,S3>
+
+

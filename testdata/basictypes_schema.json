@@ -1,0 +1,381 @@
+{
+    "namespace": "test",
+    "name": "rdltest",
+    "version": 1,
+    "comment": "schema comment line 1. schema comment line 3. schema comment line 4.",
+    "types": [
+        {
+            "StringTypeDef": {
+                "type": "String",
+                "name": "SimpleName",
+                "pattern": "[a-zA-Z_][a-zA-Z_0-9]*"
+            }
+        },
+        {
+            "StringTypeDef": {
+                "type": "String",
+                "name": "CompoundName",
+                "pattern": "([a-zA-Z_][a-zA-Z_0-9]*\\.)*[a-zA-Z_][a-zA-Z_0-9]*"
+            }
+        },
+        {
+            "EnumTypeDef": {
+                "type": "Enum",
+                "name": "Options",
+                "comment": "options comment",
+                "elements": [
+                    {
+                        "symbol": "ONE",
+                        "comment": "options comment"
+                    },
+                    {
+                        "symbol": "TWO"
+                    },
+                    {
+                        "symbol": "THREE"
+                    }
+                ]
+            }
+        },
+        {
+            "StringTypeDef": {
+                "type": "Symbol",
+                "name": "Foo"
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "SymTest",
+                "fields": [
+                    {
+                        "name": "symmap",
+                        "type": "Map",
+                        "items": "String",
+                        "keys": "Symbol"
+                    },
+                    {
+                        "name": "symary",
+                        "type": "Array",
+                        "items": "Symbol"
+                    },
+                    {
+                        "name": "sym",
+                        "type": "Symbol"
+                    }
+                ]
+            }
+        },
+        {
+            "StringTypeDef": {
+                "type": "String",
+                "name": "ComplicatedOptions",
+                "values": [
+                    "a:b",
+                    "c:d",
+                    "e:f"
+                ]
+            }
+        },
+        {
+            "StringTypeDef": {
+                "type": "String",
+                "name": "AlphaName",
+                "comment": "AlphaName def one or more alpha characters",
+                "pattern": "[a-zA-Z_]+"
+            }
+        },
+        {
+            "StringTypeDef": {
+                "type": "String",
+                "name": "YEncoded",
+                "pattern": "[a-zA-Z0-9._%=-]*"
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "StringTest",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "SimpleName"
+                    },
+                    {
+                        "name": "parent",
+                        "type": "CompoundName"
+                    },
+                    {
+                        "name": "names",
+                        "type": "Array",
+                        "optional": true,
+                        "items": "SimpleName"
+                    },
+                    {
+                        "name": "enc",
+                        "type": "YEncoded",
+                        "optional": true
+                    }
+                ]
+            }
+        },
+        {
+            "StringTypeDef": {
+                "type": "String",
+                "name": "azAZ",
+                "pattern": "[a-zA-Z]+"
+            }
+        },
+        {
+            "NumberTypeDef": {
+                "type": "Int8",
+                "name": "TinyInt"
+            }
+        },
+        {
+            "NumberTypeDef": {
+                "type": "Int16",
+                "name": "SmallInt"
+            }
+        },
+        {
+            "NumberTypeDef": {
+                "type": "Int32",
+                "name": "RegularInt"
+            }
+        },
+        {
+            "NumberTypeDef": {
+                "type": "Int64",
+                "name": "LargeInt"
+            }
+        },
+        {
+            "NumberTypeDef": {
+                "type": "Int32",
+                "name": "Year",
+                "min": {
+                    "Int64": 1000
+                },
+                "max": {
+                    "Int64": 3000
+                }
+            }
+        },
+        {
+            "NumberTypeDef": {
+                "type": "Float64",
+                "name": "Latitude",
+                "min": {
+                    "Int64": -90
+                },
+                "max": {
+                    "Int64": 90
+                }
+            }
+        },
+        {
+            "NumberTypeDef": {
+                "type": "Float64",
+                "name": "Pi",
+                "min": {
+                    "Int64": 3
+                },
+                "max": {
+                    "Float64": 3.5
+                }
+            }
+        },
+        {
+            "NumberTypeDef": {
+                "type": "Int64",
+                "name": "LongNumber",
+                "min": {
+                    "Int64": 500000
+                },
+                "max": {
+                    "Int64": 10000000
+                }
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "MapTest",
+                "fields": [
+                    {
+                        "name": "locations",
+                        "type": "Map",
+                        "items": "Int32",
+                        "keys": "String"
+                    }
+                ]
+            }
+        },
+        {
+            "ArrayTypeDef": {
+                "type": "Array",
+                "name": "ArrayOfInt",
+                "items": "Int32",
+                "maxSize": 3
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "MapArrayTest",
+                "fields": [
+                    {
+                        "name": "locations",
+                        "type": "Map",
+                        "items": "ArrayOfInt",
+                        "keys": "String"
+                    }
+                ]
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "IntOOBTest",
+                "fields": [
+                    {
+                        "name": "theyear",
+                        "type": "Year"
+                    }
+                ]
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "NegativeNumberTest",
+                "fields": [
+                    {
+                        "name": "mylatitude",
+                        "type": "Latitude"
+                    }
+                ]
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "UUIDTest",
+                "fields": [
+                    {
+                        "name": "myid",
+                        "type": "UUID"
+                    }
+                ]
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "TimestampTest",
+                "fields": [
+                    {
+                        "name": "mytime",
+                        "type": "Timestamp"
+                    }
+                ]
+            }
+        },
+        {
+            "StructTypeDef": {
+                "type": "Struct",
+                "name": "Test",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "String"
+                    },
+                    {
+                        "name": "utfname",
+                        "type": "String"
+                    },
+                    {
+                        "name": "bool",
+                        "type": "Bool"
+                    },
+                    {
+                        "name": "bool2",
+                        "type": "Bool"
+                    },
+                    {
+                        "name": "int",
+                        "type": "Int32"
+                    },
+                    {
+                        "name": "mylong",
+                        "type": "Int64"
+                    },
+                    {
+                        "name": "mydbl",
+                        "type": "Float64"
+                    },
+                    {
+                        "name": "intarray",
+                        "type": "ArrayOfInt",
+                        "optional": true
+                    },
+                    {
+                        "name": "my_int_array",
+                        "type": "Array",
+                        "items": "Int32"
+                    },
+                    {
+                        "name": "my_str_array",
+                        "type": "Array",
+                        "items": "String"
+                    },
+                    {
+                        "name": "myuuid",
+                        "type": "UUID"
+                    },
+                    {
+                        "name": "myaz",
+                        "type": "azAZ"
+                    },
+                    {
+                        "name": "myyear",
+                        "type": "Year"
+                    },
+                    {
+                        "name": "mypi",
+                        "type": "Pi"
+                    },
+                    {
+                        "name": "myotherlong",
+                        "type": "LongNumber"
+                    },
+                    {
+                        "name": "mytime",
+                        "type": "Timestamp"
+                    },
+                    {
+                        "name": "myoptions",
+                        "type": "Options"
+                    },
+                    {
+                        "name": "co1",
+                        "type": "ComplicatedOptions"
+                    },
+                    {
+                        "name": "co2",
+                        "type": "ComplicatedOptions"
+                    },
+                    {
+                        "name": "co3",
+                        "type": "ComplicatedOptions"
+                    },
+                    {
+                        "name": "symtest",
+                        "type": "SymTest"
+                    }
+                ]
+            }
+        }
+    ]
+}
