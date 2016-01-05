@@ -1846,7 +1846,7 @@ func (p *parser) parseResource(comment string) *Resource {
 	}
 	method := strings.ToUpper(string(p.identifier("HTTP method")))
 	switch method {
-	case "GET", "PUT", "DELETE", "POST", "HEAD", "PATCH":
+	case "GET", "PUT", "DELETE", "POST", "HEAD", "PATCH", "OPTIONS":
 		r.Method = method
 	default:
 		p.error("Bad HTTP method in resource: " + method)
