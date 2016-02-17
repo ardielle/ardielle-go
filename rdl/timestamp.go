@@ -122,7 +122,7 @@ func NewTimestamp(t time.Time) Timestamp {
 }
 
 //
-// NewTimestamp - create a new Timestamp from the specified time.Time
+// TimestampFromEpoch creates a new Timestamp from the specified time.Time
 //
 func TimestampFromEpoch(secondsSinceEpoch float64) Timestamp {
 	sec := int64(secondsSinceEpoch)

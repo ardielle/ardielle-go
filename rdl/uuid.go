@@ -49,11 +49,12 @@ func ParseUUID(s string) UUID {
 		14, 16,
 		19, 21,
 		24, 26, 28, 30, 32, 34} {
-		if v, err := strconv.ParseInt(s[x:x+2], 16, 16); err != nil {
+		var v int64
+		var err error
+		if v, err = strconv.ParseInt(s[x:x+2], 16, 16); err != nil {
 			return nil
-		} else {
-			uuid[i] = byte(v)
 		}
+		uuid[i] = byte(v)
 	}
 	return uuid
 }
@@ -69,33 +70,33 @@ func NewUUID(b []byte) UUID {
 }
 
 //
-// String - produce the standard "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" representaion of a UUID
+// String produces the standard "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" representaion of a UUID.
 //
-func (uuid UUID) String() string {
-	if uuid == nil || len(uuid) != 16 {
+func (u UUID) String() string {
+	if u == nil || len(u) != 16 {
 		return "00000000-0000-0000-0000-000000000000"
 	}
-	b := []byte(uuid)
+	b := []byte(u)
 	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x", b[:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
 
 //
-// MarshalJSON - produce the standard format for a UUID as a JSON string
+// MarshalJSON produces the standard format for a UUID as a JSON string.
 //
-func (uuid UUID) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + uuid.String() + "\""), nil
+func (u UUID) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + u.String() + "\""), nil
 }
 
 //
-// UnmarshalJSON - Parse a JSON string in standard UUID format
+// UnmarshalJSON parses a JSON string in standard UUID format.
 //
-func (uuid *UUID) UnmarshalJSON(b []byte) error {
+func (u *UUID) UnmarshalJSON(b []byte) error {
 	var j string
 	err := json.Unmarshal(b, &j)
 	if err == nil {
 		v := ParseUUID(string(j))
 		if v != nil {
-			*uuid = v
+			*u = v
 		} else {
 			err = fmt.Errorf("Bad UUID: %v", string(j))
 		}

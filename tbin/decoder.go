@@ -10,54 +10,53 @@ package tbin
 import (
 	"bytes"
 	"fmt"
-	"github.com/ardielle/ardielle-go/rdl"
 	"math"
 	"reflect"
 	"strings"
+
+	"github.com/ardielle/ardielle-go/rdl"
 )
 
-func (decoder *Decoder) readHeader() error {
-	tag := int(decoder.ParseUnsigned())
+func (d *Decoder) readHeader() error {
+	tag := int(d.ParseUnsigned())
 	if (tag & VersionTagMask) == VersionTag {
-		decoder.dataVersion = (tag & VersionDataMask) + 1
-		if decoder.dataVersion != CurrentVersion {
-			decoder.err = fmt.Errorf("TBin version not supported: %d", decoder.dataVersion)
-			return decoder.err
+		d.dataVersion = (tag & VersionDataMask) + 1
+		if d.dataVersion != CurrentVersion {
+			d.err = fmt.Errorf("TBin version not supported: %d", d.dataVersion)
+			return d.err
 		}
-		decoder.types = make([]*Signature, 0)
+		d.types = make([]*Signature, 0)
 		return nil
-	} else {
-		decoder.err = fmt.Errorf("not a valid tbin file")
-		return decoder.err
 	}
+	d.err = fmt.Errorf("not a valid tbin file")
+	return d.err
 }
 
-func (decoder *Decoder) Decode(data interface{}) error {
+func (d *Decoder) Decode(data interface{}) error {
 	rv := reflect.ValueOf(data)
 	if !rv.IsNil() && rv.Kind() == reflect.Ptr {
 		v := rv.Elem()
 		if v.Kind() == reflect.Interface && v.NumMethod() == 0 {
 			//Empty interface, just do the generic decode to a map
-			d, err := decoder.decode()
+			d, err := d.decode()
 			if err != nil {
 				return err
 			}
 			v.Set(reflect.ValueOf(d))
 			return nil
-		} else {
-			if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
-				v = v.Addr()
-			}
-			if v.Kind() == reflect.Ptr {
-				m, ok := v.Interface().(TBinUnmarshallable)
-				if ok {
-					err := m.UnmarshalTBin(decoder)
-					return err
-				}
-				v = v.Elem()
-			}
-			return decoder.DecodeReflect(v)
 		}
+		if v.Kind() != reflect.Ptr && v.Type().Name() != "" && v.CanAddr() {
+			v = v.Addr()
+		}
+		if v.Kind() == reflect.Ptr {
+			m, ok := v.Interface().(TBinUnmarshallable)
+			if ok {
+				err := m.UnmarshalTBin(d)
+				return err
+			}
+			v = v.Elem()
+		}
+		return d.DecodeReflect(v)
 	}
 	return fmt.Errorf("Cannot decode into this: %v", data)
 }
@@ -168,15 +167,14 @@ again:
 		if idx < len(d.types) {
 			ttype := d.types[idx]
 			return d.decodeType(ttype)
-		} else {
-			ttype := d.parseType()
-			if ttype == nil {
-				d.err = fmt.Errorf("First use of a user tag must be followed by a typedef.")
-				return nil, d.err
-			}
-			d.types = append(d.types, ttype)
-			goto again
 		}
+		ttype := d.parseType()
+		if ttype == nil {
+			d.err = fmt.Errorf("First use of a user tag must be followed by a typedef.")
+			return nil, d.err
+		}
+		d.types = append(d.types, ttype)
+		goto again
 	} else {
 		if (tag & TinyStrTagMask) == TinyStrTag {
 			n := tag & TinyStrDataMask
@@ -233,41 +231,41 @@ again:
 	return nil, fmt.Errorf("Unexpected tag value: 0x%02x", tag)
 }
 
-func (dec *Decoder) DecodeStruct() (map[string]interface{}, error) {
-	nfields := int(dec.ParseUnsigned())
+func (d *Decoder) DecodeStruct() (map[string]interface{}, error) {
+	nfields := int(d.ParseUnsigned())
 	result := make(map[string]interface{})
 	for i := 0; i < nfields; i++ {
-		name, _ := dec.ParseSymbol()
-		val, _ := dec.decode()
+		name, _ := d.ParseSymbol()
+		val, _ := d.decode()
 		result[name] = val
 	}
-	return result, dec.err
+	return result, d.err
 }
 
-func (dec *Decoder) DecodeArray() ([]interface{}, error) {
-	count := int(dec.ParseUnsigned())
+func (d *Decoder) DecodeArray() ([]interface{}, error) {
+	count := int(d.ParseUnsigned())
 	var result []interface{}
 	for i := 0; i < count; i++ {
-		val, _ := dec.decode()
+		val, _ := d.decode()
 		result = append(result, val)
 	}
-	return result, dec.err
+	return result, d.err
 }
 
-func (dec *Decoder) DecodeMap() (map[string]interface{}, error) {
-	count := int(dec.ParseUnsigned())
+func (d *Decoder) DecodeMap() (map[string]interface{}, error) {
+	count := int(d.ParseUnsigned())
 	result := make(map[string]interface{})
 	for i := 0; i < count; i++ {
-		key, _ := dec.decode()
-		val, _ := dec.decode()
+		key, _ := d.decode()
+		val, _ := d.decode()
 		skey, ok := key.(string)
 		if !ok {
-			dec.err = fmt.Errorf("Map keys must derive from strings")
+			d.err = fmt.Errorf("Map keys must derive from strings")
 			break
 		}
 		result[skey] = val
 	}
-	return result, dec.err
+	return result, d.err
 }
 
 func (d *Decoder) decodeType(tt *Signature) (interface{}, error) {
@@ -370,7 +368,7 @@ func (d *Decoder) decodeType(tt *Signature) (interface{}, error) {
 func (d *Decoder) ParseUnsigned() uint {
 	if d.err == nil {
 		n := uint(0)
-		var shift uint = 0
+		var shift uint
 		for shift < 32 {
 			b, err := d.in.ReadByte()
 			if err != nil {
@@ -391,7 +389,7 @@ func (d *Decoder) ParseUnsigned() uint {
 func (d *Decoder) ParseUnsigned64() uint64 {
 	if d.err == nil {
 		n := uint64(0)
-		var shift uint = 0
+		var shift uint
 		for shift < 64 {
 			b, err := d.in.ReadByte()
 			if err != nil {
@@ -454,9 +452,8 @@ func (d *Decoder) BoolValue() bool {
 	case BoolTag:
 		if d.ParseUnsigned() != 0 {
 			return true
-		} else {
-			return false
 		}
+		return false
 	default:
 		d.err = fmt.Errorf("Cannot get bool value for this tag: %v", d.currentTag)
 		return false
@@ -684,15 +681,14 @@ again:
 		if idx < len(d.types) {
 			ttype := d.types[idx]
 			return d.decodeTypeReflect(ttype, v)
-		} else {
-			ttype := d.parseType()
-			if ttype == nil {
-				d.err = fmt.Errorf("First use of a user tag must be followed by a typedef.")
-				return d.err
-			}
-			d.types = append(d.types, ttype)
-			goto again
 		}
+		ttype := d.parseType()
+		if ttype == nil {
+			d.err = fmt.Errorf("First use of a user tag must be followed by a typedef.")
+			return d.err
+		}
+		d.types = append(d.types, ttype)
+		goto again
 	} else {
 		if (tag & TinyStrTagMask) == TinyStrTag {
 			n := tag & TinyStrDataMask
@@ -1076,8 +1072,8 @@ func (d *Decoder) decodeTypeReflect(tt *Signature, v reflect.Value) error {
 	return d.err
 }
 
-func (dec *Decoder) DecodeStructReflect(v reflect.Value) error {
-	count := int(dec.ParseUnsigned())
+func (d *Decoder) DecodeStructReflect(v reflect.Value) error {
+	count := int(d.ParseUnsigned())
 	t := v.Type()
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -1087,31 +1083,31 @@ func (dec *Decoder) DecodeStructReflect(v reflect.Value) error {
 		}
 	}
 	for i := 0; i < count; i++ {
-		fname, _ := dec.ParseSymbol()
-		if dec.err != nil {
+		fname, _ := d.ParseSymbol()
+		if d.err != nil {
 			break
 		}
-		field, err := dec.reflectField(v, fname)
+		field, err := d.reflectField(v, fname)
 		if err != nil {
-			dec.decode() //and toss it
+			d.decode() //and toss it
 		} else {
 			if !field.CanSet() {
-				dec.err = fmt.Errorf("Cannot set struct field")
-				return dec.err
+				d.err = fmt.Errorf("Cannot set struct field")
+				return d.err
 			}
-			dec.DecodeReflect(field)
+			d.DecodeReflect(field)
 		}
 	}
-	return dec.err
+	return d.err
 }
 
-func (dec *Decoder) DecodeArrayReflect(v reflect.Value) error {
-	count := int(dec.ParseUnsigned())
+func (d *Decoder) DecodeArrayReflect(v reflect.Value) error {
+	count := int(d.ParseUnsigned())
 	t := v.Type()
 	itemType := t.Elem()
 	if !v.CanSet() {
-		dec.err = fmt.Errorf("Cannot set array element")
-		return dec.err
+		d.err = fmt.Errorf("Cannot set array element")
+		return d.err
 	}
 	v.Set(reflect.MakeSlice(reflect.SliceOf(itemType), count, count))
 	for i := 0; i < count; i++ {
@@ -1125,35 +1121,35 @@ func (dec *Decoder) DecodeArrayReflect(v reflect.Value) error {
 			}
 		}
 		if itemType.Kind() == reflect.Ptr {
-			dec.DecodeReflect(item.Elem())
+			d.DecodeReflect(item.Elem())
 		} else {
-			dec.DecodeReflect(item)
+			d.DecodeReflect(item)
 		}
 		v.Index(i).Set(item)
-		if dec.err != nil {
-			return dec.err
+		if d.err != nil {
+			return d.err
 		}
 	}
-	return dec.err
+	return d.err
 }
 
-func (dec *Decoder) DecodeMapReflect(v reflect.Value) error {
-	count := int(dec.ParseUnsigned())
+func (d *Decoder) DecodeMapReflect(v reflect.Value) error {
+	count := int(d.ParseUnsigned())
 	t := v.Type()
 	keyType := t.Key()
 	itemType := t.Elem()
 	if !v.CanSet() {
-		dec.err = fmt.Errorf("Cannot set mapentry")
-		return dec.err
+		d.err = fmt.Errorf("Cannot set mapentry")
+		return d.err
 	}
 	v.Set(reflect.MakeMap(reflect.MapOf(keyType, itemType)))
 	for i := 0; i < count; i++ {
 		key := reflect.New(keyType)
-		dec.DecodeReflect(key.Elem())
+		d.DecodeReflect(key.Elem())
 		key = key.Elem()
 		var item reflect.Value
 		if itemType.Kind() == reflect.Interface && itemType.NumMethod() == 0 {
-			tmp, err := dec.decode()
+			tmp, err := d.decode()
 			if err != nil {
 				return err
 			}
@@ -1170,15 +1166,15 @@ func (dec *Decoder) DecodeMapReflect(v reflect.Value) error {
 				}
 			}
 			if itemType.Kind() == reflect.Ptr {
-				dec.DecodeReflect(item.Elem())
+				d.DecodeReflect(item.Elem())
 			} else {
-				dec.DecodeReflect(item)
+				d.DecodeReflect(item)
 			}
 		}
-		if dec.err != nil {
-			return dec.err
+		if d.err != nil {
+			return d.err
 		}
 		v.SetMapIndex(key, item)
 	}
-	return dec.err
+	return d.err
 }

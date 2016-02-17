@@ -11,9 +11,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/ardielle/ardielle-go/rdl"
 	"math"
 	"reflect"
+
+	"github.com/ardielle/ardielle-go/rdl"
 )
 
 //
@@ -257,10 +258,9 @@ func (enc *Encoder) EncodeString(val string) error {
 			_, enc.err = enc.buf.Write(utf8)
 		}
 		return enc.err
-	} else {
-		enc.writeUnsigned(StringTag)
-		return enc.WriteString(val)
 	}
+	enc.writeUnsigned(StringTag)
+	return enc.WriteString(val)
 }
 
 func (enc *Encoder) EncodeSymbol(val rdl.Symbol) error {
@@ -347,10 +347,9 @@ func (enc *Encoder) encodeValue(v reflect.Value, useMarshallable bool) error {
 				if nvar > 0 {
 					enc.tagged = true //ensure the next WriteType doesn't actually do anything
 					return enc.encodeValue(v.Field(nvar), useMarshallable)
-				} else {
-					enc.err = fmt.Errorf("Cannot marshal uninitialized union type %v in %v", t.Name, v)
-					return enc.err
 				}
+				enc.err = fmt.Errorf("Cannot marshal uninitialized union type %v in %v", t.Name, v)
+				return enc.err
 			}
 		}
 		for i := 0; i < nfields; i++ {
@@ -370,9 +369,8 @@ func (enc *Encoder) encodeValue(v reflect.Value, useMarshallable bool) error {
 					if f.IsNil() {
 						enc.err = fmt.Errorf("Cannot marshal null pointer for required field %v in %v", ft.Name, f)
 						return enc.err
-					} else {
-						err = enc.encodeValue(f.Elem(), useMarshallable)
 					}
+					err = enc.encodeValue(f.Elem(), useMarshallable)
 				} else {
 					err = enc.encodeValue(f, useMarshallable)
 				}
@@ -677,9 +675,9 @@ func (enc *Encoder) compileSignatureOptional(sig *Signature, ref *bytes.Buffer, 
 	return enc.err
 }
 
-// DefineTag - given a signature, write the tag for it. If it is the first time
+// WriteType takes a signature and writes the tag for it. If it is the first time
 // the signature has been encountered, a new tag is allocated and written followed
-// by its definition
+// by its definition.
 func (enc *Encoder) WriteType(sig *Signature) error {
 	if enc.tagged {
 		enc.tagged = false

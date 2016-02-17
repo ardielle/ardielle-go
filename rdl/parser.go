@@ -37,7 +37,7 @@ func (p *parser) String() string {
 	return "<scanner " + p.scanner.Filename + ">"
 }
 
-// ParseRDLFile parses the specified file to produce a Schema object
+// ParseRDLFile parses the specified file to produce a Schema object.
 func ParseRDLFile(path string, verbose bool, pedantic bool, nowarn bool) (*Schema, error) {
 	return parseRDLFile(path, nil, verbose, pedantic, nowarn)
 }

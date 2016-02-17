@@ -74,7 +74,7 @@ func (reg *typeRegistry) FindType(name TypeRef) *Type {
 	return nil
 }
 
-//return common info that every type shares
+// TypeInfo returns common info that every type shares.
 func TypeInfo(t *Type) (TypeName, TypeRef, string) {
 	switch t.Variant {
 	case TypeVariantAliasTypeDef:
