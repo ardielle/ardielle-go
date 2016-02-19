@@ -6,10 +6,11 @@ package tbin
 import (
 	"bytes"
 	"fmt"
-	"github.com/ardielle/ardielle-go/rdl"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/ardielle/ardielle-go/rdl"
 )
 
 var _ = testing.Verbose
@@ -129,7 +130,7 @@ func TestMarshalSimpleTypes(test *testing.T) {
 	i32 = -(0x7fffffff) - 1
 	tdata, err = Marshal(i32)
 	checkError(test, fmt.Sprintf("i32 %d", i32), tdata, err, -1, []byte{24, 4, 255, 255, 255, 255, 15})
-	var i int = 23
+	var i = 23
 	tdata, err = Marshal(i)
 	checkError(test, "i 23", tdata, err, -1, []byte{24, 4, 46})
 	var u32 uint32 = 0xffffffff

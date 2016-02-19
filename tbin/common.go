@@ -41,11 +41,12 @@ const DefEnumTag = 0x15   // "<newtag> DefEnumTag <count> (uvarint(symlen) symby
 
 const UnionTag = 0x16
 
-// unused, reserved tags:
+// EnumTag identifies unused, reserved tags.
 const EnumTag = 0x17
 
-// A version tag should be the first tag in the stream. v1..v8 are thus supported, after which additional byte(s)
-// will be required. Bits encode (version - 1), i.e. currently encoded "0001 0000".
+// VersionTag should be the first tag in the stream. v1..v8 are thus supported,
+// after which additional byte(s) will be required.
+// Bits encode (version - 1), i.e. currently encoded "0001 0000".
 const VersionTag = 0x18 // "uvarint(0001 1xxx)"
 const VersionTagMask = 0xf8
 const VersionDataMask = 0x07
@@ -54,9 +55,10 @@ const CurVersionTag = VersionTag + (CurrentVersion - 1) // "0001 1000
 const MaxVersionTag = VersionTag + VersionDataMask
 const MaxVersion = VersionDataMask + 1
 
-// Tiny strings have a length up to 31 utf8 bytes
-// again, this optimization has no effect on packed structs, just the generic encoding (187->160 for my test data)
-// if symbols are used instead of strings, the savings are even bigger. But maps have strings, not symbols, as keys
+// TinyStrTag is for strings that have a length up to 31 utf8 bytes.
+// Again, this optimization has no effect on packed structs, just the generic encoding
+// (187->160 for my test data). If symbols are used instead of strings, the savings are
+// even bigger. But maps have strings, not symbols, as keys.
 const TinyStrTag = 0x20 // "001x xxxx" <utf8byte>*
 const TinyStrTagMask = 0xe0
 const TinyStrDataMask = 0x1f
@@ -64,6 +66,7 @@ const TinyStrMaxlen = TinyStrDataMask
 
 const FirstUserTag = 0x40 //0x40..0x7f all fit in a single byte tag. Subsequent tags take more. The tag is an unsigned varint.
 
+// TagName returns the tag name for the tag.
 func TagName(tag int) string {
 	if (tag & TinyStrTagMask) == TinyStrTag {
 		return "String"
@@ -110,12 +113,13 @@ func TagName(tag int) string {
 	}
 }
 
+// Symbolic is an interface wrapping the Symbol() method.
 type Symbolic interface {
 	Symbol() string
 }
 
 //
-// Signature - a minimal description of a type
+// Signature is a minimal description of a type.
 //
 type Signature struct {
 	Tag      int               `json:"tag"`
@@ -128,7 +132,7 @@ type Signature struct {
 }
 
 //
-// FieldSignature - the description of a single field in a Struct
+// FieldSignature is the description of a single field in a Struct.
 //
 type FieldSignature struct {
 	Name     string     `json:"name"`
@@ -137,8 +141,7 @@ type FieldSignature struct {
 }
 
 //
-// String - Signature's String() method produces a compact flat representation of
-// the signature.
+// String produces a compact flat representation of the signature.
 //
 func (sig *Signature) String() string {
 	if sig.key == "" {
@@ -152,18 +155,17 @@ func (sig *Signature) cacheKey() string {
 	case StructTag:
 		if sig.Fields == nil {
 			return TagName(sig.Tag) //naked struct, implies map[rdl.Symbol]rdl.Any
-		} else {
-			s := TagName(sig.Tag) + "{"
-			for i, f := range sig.Fields {
-				if i > 0 {
-					s += ","
-				}
-				s += f.Name
-				s += ":"
-				s += f.Type.String()
-			}
-			return s + "}"
 		}
+		s := TagName(sig.Tag) + "{"
+		for i, f := range sig.Fields {
+			if i > 0 {
+				s += ","
+			}
+			s += f.Name
+			s += ":"
+			s += f.Type.String()
+		}
+		return s + "}"
 	case ArrayTag:
 		return TagName(sig.Tag) + "<" + sig.Items.String() + ">"
 	case MapTag:
@@ -234,7 +236,7 @@ var Symbol = &Signature{Tag: SymbolTag}
 var UUID = &Signature{Tag: UUIDTag}
 var Any = &Signature{Tag: AnyTag}
 
-// EncodeUvarint - encode the uvarint to the Writer
+// EncodeUvarint encodes the uvarint to the Writer.
 func EncodeUvarint(out io.Writer, n int) error {
 	var buf [16]byte
 	var err error
@@ -264,17 +266,17 @@ func EncodeUvarint(out io.Writer, n int) error {
 	return err
 }
 
-// EncodeVarint - encode the varint to the Writer
+// EncodeVarint encodes the varint to the Writer.
 func EncodeVarint(out io.Writer, n int) error {
 	return EncodeUvarint(out, (n<<1)^(n>>31))
 }
 
-// DecodeUvarint - decode the uvarint from the Reader
+// DecodeUvarint decodes the uvarint from the Reader.
 func DecodeUvarint(in io.Reader) (uint, error) {
 	var abuf [1]byte
 	buf := abuf[:]
-	var n uint = 0
-	var shift uint = 0
+	var n uint
+	var shift uint
 	for shift < 32 {
 		c, err := in.Read(buf)
 		if c == 1 {
@@ -292,7 +294,7 @@ func DecodeUvarint(in io.Reader) (uint, error) {
 	return 0, fmt.Errorf("Bad varint encoding")
 }
 
-// DecodeVarint - decode the varint from the Reader
+// DecodeVarint decodes the varint from the Reader.
 func DecodeVarint(in io.Reader) (int, error) {
 	u, err := DecodeUvarint(in)
 	n := int(u)
@@ -300,7 +302,7 @@ func DecodeVarint(in io.Reader) (int, error) {
 }
 
 //
-// Return a Signature for the type of the given data. Reflection is used.
+// TypeSignature returns a Signature for the type of the given data. Reflection is used.
 //
 func TypeSignature(val interface{}) *Signature {
 	t := reflect.TypeOf(val)

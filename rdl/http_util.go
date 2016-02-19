@@ -13,8 +13,7 @@ import (
 
 // for client/server generated code support
 
-//
-// Context is the context for a handler callout, in case access to the underlying request information is needed.
+// ResourceContext is the context for a handler callout, in case access to the underlying request information is needed.
 // Because explicit arguments are declared in the API with RDL (include path, query, and header params), the
 // need to access this is rare.
 // Note that the map of name to value is not protected for concurrency - the app must do this itself if it plans
@@ -29,7 +28,7 @@ type ResourceContext struct {
 }
 
 //
-// Get - returns an application data value on the context
+// Get - returns an application data value on the context.
 //
 func (ctx *ResourceContext) Get(name string) interface{} {
 	if ctx.Values != nil {
@@ -65,6 +64,7 @@ func (e ResourceError) Error() string {
 	return fmt.Sprintf("%d %s", e.Code, e.Message)
 }
 
+// JSONResponse provides response encoded as JSON.
 func JSONResponse(w http.ResponseWriter, code int, data interface{}) {
 	w.WriteHeader(code)
 	switch code {
@@ -83,6 +83,8 @@ func JSONResponse(w http.ResponseWriter, code int, data interface{}) {
 	}
 }
 
+// OptionalStringParam parses and returns an optional parameter
+// from the form body (multipart/form-data encoded).
 func OptionalStringParam(r *http.Request, name string) string {
 	if r.Form == nil {
 		r.ParseMultipartForm(32 << 20)
@@ -232,7 +234,8 @@ func HeaderParam(r *http.Request, name string, defaultValue string) string {
 	return val
 }
 
-//Go misfeature: all headers are canonicalizer as Capslike-This (for a header "CapsLike-this").
+// FoldHttpHeaderName adapts to the Go misfeature: all headers are
+// canonicalized as Capslike-This (for a header "CapsLike-this").
 func FoldHttpHeaderName(name string) string {
 	return http.CanonicalHeaderKey(name)
 }

@@ -117,9 +117,8 @@ func rannotated(t reflect.Type, v reflect.Value) string {
 	case reflect.Ptr:
 		if v.IsNil() {
 			return "nil"
-		} else {
-			return "*" + annotated(v.Elem().Interface())
 		}
+		return "*" + annotated(v.Elem().Interface())
 	case reflect.String:
 		return fmt.Sprintf("string~%q", v.String())
 	case reflect.Bool:
