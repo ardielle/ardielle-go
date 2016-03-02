@@ -666,11 +666,21 @@ func (p *parser) findTypeInContext(context *parser, name TypeRef) *Type {
 }
 
 func (p *parser) baseTypeByName(supertypeName TypeRef) BaseType {
-	return p.baseType(p.findType(supertypeName))
+	var bt BaseType
+	inThisInclude := p.baseType(p.findType(supertypeName))
+	if inThisInclude == bt && p.parent != nil {
+		return p.parent.baseType(p.findType(supertypeName))
+	}
+	return inThisInclude
 }
 
 func (p *parser) baseType(t *Type) BaseType {
-	return p.registry.BaseType(t)
+	var bt BaseType
+	inThisInclude := p.registry.BaseType(t)
+	if inThisInclude == bt && p.parent != nil {
+		return p.parent.baseType(t)
+	}
+	return inThisInclude
 }
 
 func (p *parser) parseTypeRef(expected string) TypeRef {
