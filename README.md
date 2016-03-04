@@ -1,5 +1,10 @@
-# ardielle-go
+# ardielle-go [![Build Status](https://travis-ci.org/ardielle/ardielle-go.svg?branch=master)](https://travis-ci.org/ardielle/ardielle-go)
+
 Go language support for RDL.
+
+Godoc API references:  
+* https://godoc.org/github.com/ardielle/ardielle-go/rdl
+* https://godoc.org/github.com/ardielle/ardielle-go/tbin  
 
 ## License
 
