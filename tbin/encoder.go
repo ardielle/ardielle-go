@@ -348,7 +348,7 @@ func (enc *Encoder) encodeValue(v reflect.Value, useMarshallable bool) error {
 					enc.tagged = true //ensure the next WriteType doesn't actually do anything
 					return enc.encodeValue(v.Field(nvar), useMarshallable)
 				}
-				enc.err = fmt.Errorf("Cannot marshal uninitialized union type %v in %v", t.Name, v)
+				enc.err = fmt.Errorf("Cannot marshal uninitialized union type %s in %v", t.Name(), v)
 				return enc.err
 			}
 		}
