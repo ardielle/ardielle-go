@@ -126,7 +126,7 @@ func TimestampParse(s string) (Timestamp, error) {
 // NewTimestamp - create a new Timestamp from the specified time.Time
 //
 func NewTimestamp(t time.Time) Timestamp {
-	return Timestamp{t}
+	return Timestamp{t.UTC()}
 }
 
 //
