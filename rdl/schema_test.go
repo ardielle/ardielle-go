@@ -61,7 +61,15 @@ func TestTimestamp(test *testing.T) {
 	if ts3.Validate() != nil {
 		test.Errorf("Cannot parse timestamp")
 	}
-	expectJSON(test, ts3, `"2015-03-14T15:59:26.535Z"`)
+	ts4, err := TimestampParse("2015-03-14T15:59:26.535+00:00")
+	if err != nil {
+		test.Errorf("Cannot parse timestamp: %v", err)
+	}
+	fmt.Println("ts4:", ts4)
+	if ts3.Validate() != nil {
+		test.Errorf("Cannot parse timestamp")
+	}
+	expectJSON(test, ts4, `"2015-03-14T15:59:26.535Z"`)
 	var tt TimestampTestStruct
 	tt.ID = ParseUUID("275a2ede-ca77-11e4-9b30-003ee1be85f9")
 	tt.T1 = ts3
