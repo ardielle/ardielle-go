@@ -87,7 +87,7 @@ func (checker *validator) validate(t *Type, data interface{}, context string) Va
 	case BaseTypeUnion:
 		return checker.validateUnion(t.UnionTypeDef, data, context)
 	case BaseTypeString:
-		return checker.validateString(t, fmt.Sprint(data), context)
+		return checker.validatePotentialString(t, data, context)
 	}
 	switch d := data.(type) {
 	case bool:
@@ -146,6 +146,15 @@ func (checker *validator) validate(t *Type, data interface{}, context string) Va
 		}
 	}
 	return checker.typeMismatchVariant(context, data, t)
+}
+
+func (checker *validator) validatePotentialString(t *Type, data interface{}, context string) Validation {
+	sdata, ok := data.(string)
+	if !ok {
+		tName, _, _ := TypeInfo(t)
+		return checker.bad(context, "Not a string", sdata, tName)
+	}
+	return checker.validateString(t, sdata, context)
 }
 
 func (checker *validator) validateString(t *Type, data string, context string) Validation {
