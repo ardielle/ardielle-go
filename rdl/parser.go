@@ -1848,7 +1848,7 @@ func (p *parser) parseResourceOptions() map[ExtendedAnnotation]string {
 func (p *parser) parseResource(comment string) *Resource {
 	r := NewResource()
 	r.Comment = comment
-	r.Type = TypeRef(p.identifier("resource type"))
+	r.Type = p.parseTypeRef("resource type")
 	rt := p.findType(TypeRef(r.Type))
 	if rt == nil {
 		p.error("Type not found: " + string(r.Type))
