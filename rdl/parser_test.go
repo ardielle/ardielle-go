@@ -86,7 +86,10 @@ func TestParse(test *testing.T) {
 	_, err := parseRDLString(badRdl)
 	if err == nil {
 		test.Errorf("Expected parse fail, it didn't")
-	} else {
-		fmt.Printf("failed as expected: %v\n", err)
+	}
+	badRdl = `type Foo Struct { String foo; } type Bar Foo { String foo; }`
+	_, err = parseRDLString(badRdl)
+	if err == nil {
+		test.Errorf("Expected parse fail, it didn't")
 	}
 }

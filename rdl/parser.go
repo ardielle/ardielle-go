@@ -1042,6 +1042,20 @@ func makeAliasType(typeName TypeName, supertypeName TypeRef, comment string) *Ty
 	return &Type{Variant: TypeVariantAliasTypeDef, AliasTypeDef: tmpDef}
 }
 
+func (p *parser) usedFieldNames(tref TypeRef) map[Identifier]bool {
+	var fieldNames map[Identifier]bool
+	tt := p.registry.FindType(tref)
+	if tt.Variant == TypeVariantBaseType {
+		fieldNames = make(map[Identifier]bool)
+	} else if tt.Variant == TypeVariantStructTypeDef {
+		fieldNames = p.usedFieldNames(TypeRef(tt.StructTypeDef.Type))
+		for _, f := range tt.StructTypeDef.Fields {
+			fieldNames[f.Name] = true
+		}
+	}
+	return fieldNames
+}
+
 func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
 	c := p.skipWhitespaceExceptNewline()
 	if c == ';' || c == '/' {
@@ -1068,7 +1082,7 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 	fcomment := ""
 	p.expect("{")
 	var fields []*StructFieldDef
-	fieldNames := make(map[Identifier]bool)
+	fieldNames := p.usedFieldNames(t.Type)
 	tok := p.scanner.Scan()
 	for tok != scanner.EOF {
 		if tok == '}' {
@@ -1234,8 +1248,6 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment st
 					ft := p.findType(TypeRef(fieldType))
 					bt := p.baseType(ft)
 					switch bt {
-					//					bt := p.baseTypeByName(fieldType)
-					//					switch strings.ToLower(*bt.Name) {
 					case BaseTypeString:
 						val = p.stringLiteral("String literal")
 					case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
