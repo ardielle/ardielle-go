@@ -748,11 +748,12 @@ func (p *parser) parseType(comment string) *Type {
 			t = p.parseUnionType(typeName, supertypeName, comment)
 		case BaseTypeEnum:
 			t = p.parseEnumType(typeName, supertypeName, comment)
-		case BaseTypeBool:
-			t = p.parseBoolType(typeName, supertypeName, comment)
+		case BaseTypeBool, BaseTypeAny:
+			t = p.parseAliasType(typeName, supertypeName, comment)
 		case BaseTypeBytes:
 			t = p.parseBytesType(typeName, supertypeName, comment)
 		default:
+			fmt.Println("bt:", bt)
 			p.error("Cannot derive from this type: " + string(supertypeName))
 		}
 	}
@@ -1662,7 +1663,7 @@ func (p *parser) parseNumericType(typeName Identifier, supertypeName TypeRef, co
 	return &Type{Variant: TypeVariantNumberTypeDef, NumberTypeDef: t}
 }
 
-func (p *parser) parseBoolType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
+func (p *parser) parseAliasType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
 	t := NewAliasTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
