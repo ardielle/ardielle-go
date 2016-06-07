@@ -1061,7 +1061,7 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 	c := p.skipWhitespaceExceptNewline()
 	if c == ';' || c == '/' {
 		comment = p.statementEnd(comment)
-		return makeAliasType(TypeName(typeName), TypeRef(BaseTypeStruct.String()), comment)
+		return makeAliasType(TypeName(typeName), TypeRef(supertypeName), comment)
 	}
 	t := NewStructTypeDef()
 	t.Name = TypeName(typeName)
