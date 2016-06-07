@@ -99,4 +99,18 @@ func TestParse(test *testing.T) {
 	parseBadRDL(test, `type Contact Struct { String foo; String foo; }`)
 	parseBadRDL(test, `type Foo Struct { String foo; } type Bar Foo { String foo; }`)
 	parseGoodRDL(test, `type Foo Any; type X Struct { Any y; } type Y Struct { Foo y;}`)
+
+	schema, err := parseRDLString(`type Base Struct { String bar; } type Foo Base;`)
+	if err != nil {
+		test.Errorf("Cannot parse: %v\n", err)
+	} else {
+		reg := NewTypeRegistry(schema)
+		t1 := reg.FindType("Foo")
+		if t1 == nil {
+			test.Errorf("Expected type, found nothing")
+		} else {
+			_, tSuper, _ := TypeInfo(t1)
+			assertStringEquals(test, "supertype", "Base", string(tSuper))
+		}
+	}
 }
