@@ -91,13 +91,14 @@ func parseGoodRDL(test *testing.T, s string) {
 func parseBadRDL(test *testing.T, s string) {
 	_, err := parseRDLString(s)
 	if err == nil {
-		test.Errorf("Expected failure to parse (%s), but it didn't fail", s)
+		test.Errorf("Expected failure parsing (%s), but it didn't fail", s)
 	}
 }
 
 func TestParse(test *testing.T) {
 	parseBadRDL(test, `type Contact Struct { String foo; String foo; }`)
 	parseBadRDL(test, `type Foo Struct { String foo; } type Bar Foo { String foo; }`)
+	parseBadRDL(test, `type Foo Struct { String bar; } resource Foo GET "/foo?d={debug}" {String debug (optinal); }`)
 	parseGoodRDL(test, `type Foo Any; type X Struct { Any y; } type Y Struct { Foo y;}`)
 
 	schema, err := parseRDLString(`type Base Struct { String bar; } type Foo Base;`)

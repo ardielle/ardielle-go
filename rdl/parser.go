@@ -2217,6 +2217,12 @@ func (p *parser) parseResourceParamOptions(tok rune, pathOrQueryParam bool, inpu
 				p.expect("=")
 				s := p.stringLiteral("quoted context variable name")
 				input.Context = s
+			default:
+				if strings.HasPrefix(string(option), "x_") {
+					p.error("resource parameters do not support annotations: " + string(option))
+				} else {
+					p.error(fmt.Sprintf("Invalid resource parameter option: '%s'\n", option))
+				}
 			}
 			if p.err != nil {
 				return false
