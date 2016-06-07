@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 )
 
@@ -72,5 +73,20 @@ func TestBasicTypes(test *testing.T) {
 		} else {
 			fmt.Println("Validation result:", validation)
 		}
+	}
+}
+
+func parseRDLString(s string) (*Schema, error) {
+	r := strings.NewReader(s)
+	return parseRDL(nil, "", r, true, true, false)
+}
+
+func TestParse(test *testing.T) {
+	badRdl := `type Contact Struct { String foo; String foo; }`
+	_, err := parseRDLString(badRdl)
+	if err == nil {
+		test.Errorf("Expected parse fail, it didn't")
+	} else {
+		fmt.Printf("failed as expected: %v\n", err)
 	}
 }

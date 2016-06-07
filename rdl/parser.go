@@ -1068,6 +1068,7 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 	fcomment := ""
 	p.expect("{")
 	var fields []*StructFieldDef
+	fieldNames := make(map[Identifier]bool)
 	tok := p.scanner.Scan()
 	for tok != scanner.EOF {
 		if tok == '}' {
@@ -1120,6 +1121,11 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 						return nil
 					}
 					tok = p.scanner.Scan()
+					if _, ok := fieldNames[field.Name]; ok {
+						p.error("duplicate field name '" + string(field.Name) + "'")
+						return nil
+					}
+					fieldNames[field.Name] = true
 					fields = append(fields, field)
 				}
 			default:
