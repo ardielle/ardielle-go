@@ -614,11 +614,22 @@ func (p *parser) findLegacySynonym(context *parser, name string) *Type {
 
 const forwardReferenceTag = "___forward_reference___"
 
+func (p *parser) makeForwardTypeRef(typeName string) *Type {
+	tmpDef := NewAliasTypeDef()
+	tmpDef.Name = TypeName(typeName)
+	tmpDef.Type = forwardReferenceTag
+	return &Type{Variant: TypeVariantAliasTypeDef, AliasTypeDef: tmpDef}
+}
+
+func (p *parser) isForwardTypeRef(ft *Type) bool {
+	return ft.Variant == TypeVariantAliasTypeDef && ft.AliasTypeDef != nil && ft.AliasTypeDef.Type == forwardReferenceTag
+}
+
 func (p *parser) registerType(t *Type) {
 	name, _, _ := TypeInfo(t)
 	prev := p.findType(TypeRef(name))
 	if prev != nil {
-		if t.AliasTypeDef != nil && t.AliasTypeDef.Type == forwardReferenceTag {
+		if p.isForwardTypeRef(t) {
 			if !p.nowarn {
 				p.warning("redefinition of " + string(name))
 			}
@@ -628,7 +639,7 @@ func (p *parser) registerType(t *Type) {
 			//the same, just ignore subsequent defns
 			return
 		}
-		forwardRef := prev.AliasTypeDef != nil && prev.AliasTypeDef.Type == forwardReferenceTag
+		forwardRef := p.isForwardTypeRef(prev)
 		if p.pedantic && !forwardRef {
 			fmt.Println("prev:", prev)
 			fmt.Println("t:", t)
@@ -726,10 +737,7 @@ func (p *parser) parseType(comment string) *Type {
 	if p.err != nil {
 		return nil
 	}
-	tmpDef := NewAliasTypeDef()
-	tmpDef.Name = TypeName(typeName)
-	tmpDef.Type = forwardReferenceTag
-	tmpType := &Type{Variant: TypeVariantAliasTypeDef, AliasTypeDef: tmpDef}
+	tmpType := p.makeForwardTypeRef(string(typeName))
 	p.registerType(tmpType) //so recursive references work. This will get replaced.
 	if p.err == nil {
 		bt := p.baseTypeByName(supertypeName)
@@ -1284,6 +1292,11 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment st
 	}
 	if optional {
 		field.Optional = true
+	} else {
+		ft := p.findType(TypeRef(field.Type))
+		if p.isForwardTypeRef(ft) {
+			p.error(fmt.Sprintf("Recursively typed fields must be optional: field '%s' in struct %s", field.Name, t.Name))
+		}
 	}
 	return field
 }
