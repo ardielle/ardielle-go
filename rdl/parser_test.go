@@ -188,3 +188,27 @@ resource MyType GET "/foo/{bar}" (x_r_one="two", x_r_three="four") {
 		}
 	}
 }
+
+func TestRecursive(test *testing.T) {
+	_, err := parseRDLString(`
+type Node Struct {
+  Node left;
+  String value;
+  Node right (optional);
+}
+`)
+	if err == nil {
+		test.Errorf("recursive field must be optional")
+	}
+
+	_, err = parseRDLString(`
+type Node Struct {
+  Node left (optional);
+  String value;
+  Node right (optional);
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+	}
+}
