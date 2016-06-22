@@ -1894,8 +1894,7 @@ func (p *parser) parseResource(comment string) *Resource {
 			}
 		}
 		if len(options) > 0 {
-			//when the rdl model gets updated to include it
-			//r.Annotations = options
+			r.Annotations = options
 		}
 	} else if c != '{' {
 		p.expectedError("'{'")
@@ -2148,6 +2147,7 @@ func (p *parser) addOutput(r *Resource, paramName string, input *ResourceInput) 
 	out.Type = input.Type
 	out.Header = input.Header
 	out.Optional = input.Optional
+	out.Annotations = input.Annotations
 	r.Outputs = append(r.Outputs, out)
 }
 
@@ -2219,7 +2219,7 @@ func (p *parser) parseResourceParamOptions(tok rune, pathOrQueryParam bool, inpu
 				input.Context = s
 			default:
 				if strings.HasPrefix(string(option), "x_") {
-					p.error("resource parameters do not support annotations: " + string(option))
+					input.Annotations = p.parseExtendedOption(input.Annotations, ExtendedAnnotation(option))
 				} else {
 					p.error(fmt.Sprintf("Invalid resource parameter option: '%s'\n", option))
 				}
