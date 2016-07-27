@@ -212,3 +212,8 @@ type Node Struct {
 		test.Errorf("cannot parse valid RDL: %v", err)
 	}
 }
+
+func TestIncludeTypeLookup(test *testing.T) {
+	//this tests that type lookup is correct across multiple included files
+	loadTestSchema(test, "k1_a.rdl")
+}

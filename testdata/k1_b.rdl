@@ -1,0 +1,6 @@
+include "k1_c.rdl"
+
+type B C {
+     String bfield
+}
+

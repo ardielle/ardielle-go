@@ -1,0 +1,7 @@
+include "k1_c.rdl"
+include "k1_b.rdl"
+
+type A C {
+     String afield
+}
+
