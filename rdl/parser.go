@@ -1053,7 +1053,7 @@ func makeAliasType(typeName TypeName, supertypeName TypeRef, comment string) *Ty
 
 func (p *parser) usedFieldNames(tref TypeRef) map[Identifier]bool {
 	var fieldNames map[Identifier]bool
-	tt := p.registry.FindType(tref)
+	tt := p.findType(tref)
 	if tt.Variant == TypeVariantBaseType {
 		fieldNames = make(map[Identifier]bool)
 	} else if tt.Variant == TypeVariantStructTypeDef {
