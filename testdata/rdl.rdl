@@ -189,6 +189,7 @@ type ResourceInput Struct {
     Bool optional (default=false); // If present, indicates that the input is optional
     Bool flag (default=false); // If present, indicates the queryparam is of flag style (no value)
     String context (optional); // If present, indicates the parameter comes form the implementation context
+    Map<ExtendedAnnotation,String> annotations (optional); //additional annotations starting with "x_"
 }
 
 //
@@ -200,6 +201,7 @@ type ResourceOutput Struct {
     String header; // the name of the header associated with this output
     String comment (optional); // The optional comment for the output
     Bool optional (default=false); // If present, indicates that the output is optional (the server decides)
+    Map<ExtendedAnnotation,String> annotations (optional); //additional annotations starting with "x_"
 }
 
 //
@@ -236,6 +238,7 @@ type Resource Struct {
     Array<String> alternatives (optional); // The set of alternative but non-error response codes
     Map<String,ExceptionDef> exceptions (optional); // A map of symbolic response code to Exception definitions
     Bool async (optional); //A hint to server implementations that this resource would be better implemented with async I/O
+	Map<ExtendedAnnotation,String> annotations (optional); //additional annotations starting with "x_"
 }
 
 //

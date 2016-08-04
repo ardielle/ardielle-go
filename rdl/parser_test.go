@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 )
 
@@ -73,4 +74,146 @@ func TestBasicTypes(test *testing.T) {
 			fmt.Println("Validation result:", validation)
 		}
 	}
+}
+
+func parseRDLString(s string) (*Schema, error) {
+	r := strings.NewReader(s)
+	return parseRDL(nil, "", r, true, true, false)
+}
+
+func parseGoodRDL(test *testing.T, s string) {
+	_, err := parseRDLString(s)
+	if err != nil {
+		test.Errorf("Fail to parse (%s): %v", s, err)
+	}
+}
+
+func parseBadRDL(test *testing.T, s string) {
+	_, err := parseRDLString(s)
+	if err == nil {
+		test.Errorf("Expected failure parsing (%s), but it didn't fail", s)
+	}
+}
+
+func TestParse(test *testing.T) {
+	parseBadRDL(test, `type Contact Struct { String foo; String foo; }`)
+	parseBadRDL(test, `type Foo Struct { String foo; } type Bar Foo { String foo; }`)
+	parseBadRDL(test, `type Foo Struct { String bar; } resource Foo GET "/foo?d={debug}" {String debug (optinal); }`)
+	parseGoodRDL(test, `type Foo Any; type X Struct { Any y; } type Y Struct { Foo y;}`)
+
+	schema, err := parseRDLString(`type Base Struct { String bar; } type Foo Base;`)
+	if err != nil {
+		test.Errorf("Cannot parse: %v\n", err)
+	} else {
+		reg := NewTypeRegistry(schema)
+		t1 := reg.FindType("Foo")
+		if t1 == nil {
+			test.Errorf("Expected type, found nothing")
+		} else {
+			_, tSuper, _ := TypeInfo(t1)
+			assertStringEquals(test, "supertype", "Base", string(tSuper))
+		}
+	}
+}
+
+func hasAnnotation(annotations map[ExtendedAnnotation]string, name string, value string) bool {
+	if annotations == nil {
+		return false
+	}
+	v, ok := annotations[ExtendedAnnotation(name)]
+	if !ok {
+		return false
+	}
+	if v != value {
+		return false
+	}
+	return true
+}
+
+func TestAnnotations(test *testing.T) {
+	schema, err := parseRDLString(`
+type MyType Struct (x_one="two", x_three="four") {
+  String myId (x_hasRemoteId="yes");
+  String myField;
+  String badName (x_name="goodName");
+  Int32 hasCustomRange (x_range="1;127"); // in practice would use rdl's built-in support for ranges
+}
+resource MyType GET "/foo/{bar}" (x_r_one="two", x_r_three="four") {
+  String bar (x_five="bletch")
+  String glorp (out, header="X_GLORP", x_whatever="xxx", x_oh_yeah)
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with annotations: %v", err)
+	} else {
+		reg := NewTypeRegistry(schema)
+		t1 := reg.FindType("MyType")
+		if t1 == nil || t1.Variant != TypeVariantStructTypeDef || t1.StructTypeDef == nil {
+			test.Errorf("Bad 'MyType' definition")
+		} else {
+			if !hasAnnotation(t1.StructTypeDef.Annotations, "x_one", "two") {
+				test.Errorf("Bad 'x_one' annotation")
+			}
+			if !hasAnnotation(t1.StructTypeDef.Annotations, "x_three", "four") {
+				test.Errorf("Bad 'x_three' annotation")
+			}
+			for _, f := range t1.StructTypeDef.Fields {
+				if f.Name == "myId" {
+					if !hasAnnotation(f.Annotations, "x_hasRemoteId", "yes") {
+						test.Errorf("Bad annotation on struct field 'myId'")
+					}
+				}
+			}
+			if len(schema.Resources) != 1 {
+				test.Errorf("Did not parse expected number of resources: %v", schema)
+			}
+			for _, r := range schema.Resources {
+				if !hasAnnotation(r.Annotations, "x_r_one", "two") {
+					test.Errorf("Bad annotation on resource: 'x_r_one'")
+				}
+				if !hasAnnotation(r.Annotations, "x_r_three", "four") {
+					test.Errorf("Bad annotation on resource: 'x_r_three'")
+				}
+				for _, i := range r.Inputs {
+					if i.Name == "bar" && !hasAnnotation(i.Annotations, "x_five", "bletch") {
+						test.Errorf("Bad annotation on resource input parameter 'bar'")
+					}
+				}
+				for _, o := range r.Outputs {
+					if o.Name == "glorp" && !hasAnnotation(o.Annotations, "x_whatever", "xxx") {
+						test.Errorf("Bad annotation on resource output parameter 'glorp'")
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestRecursive(test *testing.T) {
+	_, err := parseRDLString(`
+type Node Struct {
+  Node left;
+  String value;
+  Node right (optional);
+}
+`)
+	if err == nil {
+		test.Errorf("recursive field must be optional")
+	}
+
+	_, err = parseRDLString(`
+type Node Struct {
+  Node left (optional);
+  String value;
+  Node right (optional);
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+	}
+}
+
+func TestIncludeTypeLookup(test *testing.T) {
+	//this tests that type lookup is correct across multiple included files
+	loadTestSchema(test, "k1_a.rdl")
 }

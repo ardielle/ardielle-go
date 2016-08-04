@@ -614,11 +614,22 @@ func (p *parser) findLegacySynonym(context *parser, name string) *Type {
 
 const forwardReferenceTag = "___forward_reference___"
 
+func (p *parser) makeForwardTypeRef(typeName string) *Type {
+	tmpDef := NewAliasTypeDef()
+	tmpDef.Name = TypeName(typeName)
+	tmpDef.Type = forwardReferenceTag
+	return &Type{Variant: TypeVariantAliasTypeDef, AliasTypeDef: tmpDef}
+}
+
+func (p *parser) isForwardTypeRef(ft *Type) bool {
+	return ft.Variant == TypeVariantAliasTypeDef && ft.AliasTypeDef != nil && ft.AliasTypeDef.Type == forwardReferenceTag
+}
+
 func (p *parser) registerType(t *Type) {
 	name, _, _ := TypeInfo(t)
 	prev := p.findType(TypeRef(name))
 	if prev != nil {
-		if t.AliasTypeDef != nil && t.AliasTypeDef.Type == forwardReferenceTag {
+		if p.isForwardTypeRef(t) {
 			if !p.nowarn {
 				p.warning("redefinition of " + string(name))
 			}
@@ -628,7 +639,7 @@ func (p *parser) registerType(t *Type) {
 			//the same, just ignore subsequent defns
 			return
 		}
-		forwardRef := prev.AliasTypeDef != nil && prev.AliasTypeDef.Type == forwardReferenceTag
+		forwardRef := p.isForwardTypeRef(prev)
 		if p.pedantic && !forwardRef {
 			fmt.Println("prev:", prev)
 			fmt.Println("t:", t)
@@ -726,10 +737,7 @@ func (p *parser) parseType(comment string) *Type {
 	if p.err != nil {
 		return nil
 	}
-	tmpDef := NewAliasTypeDef()
-	tmpDef.Name = TypeName(typeName)
-	tmpDef.Type = forwardReferenceTag
-	tmpType := &Type{Variant: TypeVariantAliasTypeDef, AliasTypeDef: tmpDef}
+	tmpType := p.makeForwardTypeRef(string(typeName))
 	p.registerType(tmpType) //so recursive references work. This will get replaced.
 	if p.err == nil {
 		bt := p.baseTypeByName(supertypeName)
@@ -748,11 +756,12 @@ func (p *parser) parseType(comment string) *Type {
 			t = p.parseUnionType(typeName, supertypeName, comment)
 		case BaseTypeEnum:
 			t = p.parseEnumType(typeName, supertypeName, comment)
-		case BaseTypeBool:
-			t = p.parseBoolType(typeName, supertypeName, comment)
+		case BaseTypeBool, BaseTypeAny:
+			t = p.parseAliasType(typeName, supertypeName, comment)
 		case BaseTypeBytes:
 			t = p.parseBytesType(typeName, supertypeName, comment)
 		default:
+			fmt.Println("bt:", bt)
 			p.error("Cannot derive from this type: " + string(supertypeName))
 		}
 	}
@@ -1042,11 +1051,25 @@ func makeAliasType(typeName TypeName, supertypeName TypeRef, comment string) *Ty
 	return &Type{Variant: TypeVariantAliasTypeDef, AliasTypeDef: tmpDef}
 }
 
+func (p *parser) usedFieldNames(tref TypeRef) map[Identifier]bool {
+	var fieldNames map[Identifier]bool
+	tt := p.findType(tref)
+	if tt.Variant == TypeVariantBaseType {
+		fieldNames = make(map[Identifier]bool)
+	} else if tt.Variant == TypeVariantStructTypeDef {
+		fieldNames = p.usedFieldNames(TypeRef(tt.StructTypeDef.Type))
+		for _, f := range tt.StructTypeDef.Fields {
+			fieldNames[f.Name] = true
+		}
+	}
+	return fieldNames
+}
+
 func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
 	c := p.skipWhitespaceExceptNewline()
 	if c == ';' || c == '/' {
 		comment = p.statementEnd(comment)
-		return makeAliasType(TypeName(typeName), TypeRef(BaseTypeStruct.String()), comment)
+		return makeAliasType(TypeName(typeName), TypeRef(supertypeName), comment)
 	}
 	t := NewStructTypeDef()
 	t.Name = TypeName(typeName)
@@ -1068,6 +1091,7 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 	fcomment := ""
 	p.expect("{")
 	var fields []*StructFieldDef
+	fieldNames := p.usedFieldNames(t.Type)
 	tok := p.scanner.Scan()
 	for tok != scanner.EOF {
 		if tok == '}' {
@@ -1120,6 +1144,11 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 						return nil
 					}
 					tok = p.scanner.Scan()
+					if _, ok := fieldNames[field.Name]; ok {
+						p.error("duplicate field name '" + string(field.Name) + "'")
+						return nil
+					}
+					fieldNames[field.Name] = true
 					fields = append(fields, field)
 				}
 			default:
@@ -1228,8 +1257,6 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment st
 					ft := p.findType(TypeRef(fieldType))
 					bt := p.baseType(ft)
 					switch bt {
-					//					bt := p.baseTypeByName(fieldType)
-					//					switch strings.ToLower(*bt.Name) {
 					case BaseTypeString:
 						val = p.stringLiteral("String literal")
 					case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
@@ -1265,6 +1292,11 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment st
 	}
 	if optional {
 		field.Optional = true
+	} else {
+		ft := p.findType(TypeRef(field.Type))
+		if p.isForwardTypeRef(ft) {
+			p.error(fmt.Sprintf("Recursively typed fields must be optional: field '%s' in struct %s", field.Name, t.Name))
+		}
 	}
 	return field
 }
@@ -1644,7 +1676,7 @@ func (p *parser) parseNumericType(typeName Identifier, supertypeName TypeRef, co
 	return &Type{Variant: TypeVariantNumberTypeDef, NumberTypeDef: t}
 }
 
-func (p *parser) parseBoolType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
+func (p *parser) parseAliasType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
 	t := NewAliasTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
@@ -1848,7 +1880,7 @@ func (p *parser) parseResourceOptions() map[ExtendedAnnotation]string {
 func (p *parser) parseResource(comment string) *Resource {
 	r := NewResource()
 	r.Comment = comment
-	r.Type = TypeRef(p.identifier("resource type"))
+	r.Type = p.parseTypeRef("resource type")
 	rt := p.findType(TypeRef(r.Type))
 	if rt == nil {
 		p.error("Type not found: " + string(r.Type))
@@ -1875,8 +1907,7 @@ func (p *parser) parseResource(comment string) *Resource {
 			}
 		}
 		if len(options) > 0 {
-			//when the rdl model gets updated to include it
-			//r.Annotations = options
+			r.Annotations = options
 		}
 	} else if c != '{' {
 		p.expectedError("'{'")
@@ -2129,6 +2160,7 @@ func (p *parser) addOutput(r *Resource, paramName string, input *ResourceInput) 
 	out.Type = input.Type
 	out.Header = input.Header
 	out.Optional = input.Optional
+	out.Annotations = input.Annotations
 	r.Outputs = append(r.Outputs, out)
 }
 
@@ -2198,6 +2230,12 @@ func (p *parser) parseResourceParamOptions(tok rune, pathOrQueryParam bool, inpu
 				p.expect("=")
 				s := p.stringLiteral("quoted context variable name")
 				input.Context = s
+			default:
+				if strings.HasPrefix(string(option), "x_") {
+					input.Annotations = p.parseExtendedOption(input.Annotations, ExtendedAnnotation(option))
+				} else {
+					p.error(fmt.Sprintf("Invalid resource parameter option: '%s'\n", option))
+				}
 			}
 			if p.err != nil {
 				return false

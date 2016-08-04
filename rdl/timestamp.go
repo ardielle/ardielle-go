@@ -6,6 +6,7 @@ package rdl
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -108,8 +109,15 @@ func TimestampParse(s string) (Timestamp, error) {
 	layout := "2006-01-02T15:04:05.999Z"
 	t, e := time.Parse(layout, s)
 	if e != nil {
-		var ts Timestamp
-		return ts, e
+		if strings.HasSuffix(s, "+00:00") || strings.HasSuffix(s, "-00:00") {
+			t, e = time.Parse(layout, s[:len(s)-6]+"Z")
+		} else if strings.HasSuffix(s, "+0000") || strings.HasSuffix(s, "-0000") {
+			t, e = time.Parse(layout, s[:len(s)-5]+"Z")
+		}
+		if e != nil {
+			var ts Timestamp
+			return ts, e
+		}
 	}
 	return Timestamp{t}, nil
 }
@@ -118,7 +126,7 @@ func TimestampParse(s string) (Timestamp, error) {
 // NewTimestamp - create a new Timestamp from the specified time.Time
 //
 func NewTimestamp(t time.Time) Timestamp {
-	return Timestamp{t}
+	return Timestamp{t.UTC()}
 }
 
 //
