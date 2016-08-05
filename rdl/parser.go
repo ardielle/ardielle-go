@@ -16,6 +16,7 @@ import (
 	"strings"
 	"text/scanner"
 	"unicode"
+	"bytes"
 )
 
 type parser struct {
@@ -1933,6 +1934,13 @@ func (p *parser) parseResource(comment string) *Resource {
 				fcomment = p.parseLegacyComment(fcomment)
 			case scanner.Ident:
 				sym := p.scanner.TokenText()
+				rune := p.scanner.Peek()
+				// Parse multi word sym such as content-type
+				for !p.isWhitespace(rune) && !p.isSpecialRune(rune) && rune != scanner.EOF {
+					p.scanner.Scan()
+					sym += p.scanner.TokenText()
+					rune = p.scanner.Peek()
+				}
 				switch sym {
 				case "authenticate":
 					if r.Auth != nil {
@@ -1959,6 +1967,20 @@ func (p *parser) parseResource(comment string) *Resource {
 				case "async":
 					b := true
 					r.Async = &b
+					fcomment = ""
+				case "accept":
+					accept,comment := p.parseCommaSeparatedValuesTillNewline(r)
+					if len(accept) > 0 {
+						r.Accept = accept
+					}
+					r.Comment = comment
+					fcomment = ""
+				case "content-type":
+					contentType,comment := p.parseCommaSeparatedValuesTillNewline(r)
+					if len(contentType) > 0 {
+						r.ContentType = contentType
+					}
+					r.Comment = comment
 					fcomment = ""
 				default:
 					c := p.scanner.Peek()
@@ -2367,4 +2389,52 @@ func (p *parser) acceptLegacy(item string, warning string) bool {
 		p.warning(warning)
 	}
 	return true
+}
+
+func (p *parser) parseCommaSeparatedValuesTillNewline(r *Resource) ([]string, string) {
+	var buffer bytes.Buffer
+	var values []string
+	comment := r.Comment
+
+	c := p.skipWhitespaceExceptNewline()
+	for c != '\n' && c != scanner.EOF {
+		tok := p.scanner.Scan()
+		if tok == scanner.Comment {
+			comment,_ = p.parseComment(tok, comment)
+			if buffer.Len() > 0 {
+				values = append(values, buffer.String())
+			}
+			break
+		} else if tok == ',' {
+			values = append(values, buffer.String())
+			buffer.Reset()
+		} else {
+			buffer.WriteString(p.scanner.TokenText())
+		}
+
+		c = p.skipWhitespaceExceptNewline()
+		if c == '\n' {
+			values = append(values, buffer.String())
+			break
+		}
+	}
+	return values, comment
+}
+
+func (p *parser) isSpecialRune(ch rune) bool {
+	switch ch {
+	case '.': fallthrough
+	case ',': fallthrough
+	case ';': fallthrough
+	case '/': fallthrough
+	case '{': fallthrough
+	case '}': fallthrough
+	case '[': fallthrough
+	case ']': fallthrough
+	case '(': fallthrough
+	case ')': fallthrough
+	case '\n':
+		return true
+	}
+	return false
 }

@@ -1913,6 +1913,16 @@ type Resource struct {
 	// additional annotations starting with "x_"
 	//
 	Annotations map[ExtendedAnnotation]string `json:"annotations,omitempty" rdl:"optional"`
+
+	//
+	// Optional hint for resource acceptable input.
+	//
+	Accept []string `json:"accept,omitempty" rdl:"optional"`
+
+	//
+	// Optional hint for resource output content type.
+	//
+	ContentType []string `json:"content-type,omitempty" rdl:"optional"`
 }
 
 //

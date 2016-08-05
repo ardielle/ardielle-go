@@ -217,3 +217,65 @@ func TestIncludeTypeLookup(test *testing.T) {
 	//this tests that type lookup is correct across multiple included files
 	loadTestSchema(test, "k1_a.rdl")
 }
+
+func TestAccept(test *testing.T) {
+	schema, err := parseRDLString(`
+resource Any GET "/foo" {
+  accept application/json, application/xml    ,   text/plain   // some comment
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with accept: %v", err)
+	} else {
+		if len(schema.Resources) != 1 {
+			test.Errorf("Did not parse expected number of resources: %v", schema)
+		}
+		r :=  schema.Resources[0]
+		if len(r.Accept) != 3 {
+			test.Errorf("Did not parse expected number of accept: %v", len(r.Accept))
+		}
+		if r.Accept[0] != "application/json" {
+			test.Errorf("Did not parse accept value correctly: %v (expected: application/json)", r.Accept[0])
+		}
+		if r.Accept[1] != "application/xml" {
+			test.Errorf("Did not parse accept value correctly: %v (expected: application/xml)", r.Accept[1])
+		}
+		if r.Accept[2] != "text/plain" {
+			test.Errorf("Did not parse accept value correctly: %v (expected: text/plain)", r.Accept[2])
+		}
+		if r.Comment != "some comment" {
+			test.Errorf("Did not parse trailing comment correctly: %v", r.Comment)
+		}
+	}
+}
+
+func TestContentType(test *testing.T) {
+	schema, err := parseRDLString(`
+resource Any GET "/foo" {
+  content-type application/json, application/xml    ,   text/plain   // some comment
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with accept: %v", err)
+	} else {
+		if len(schema.Resources) != 1 {
+			test.Errorf("Did not parse expected number of resources: %v", schema)
+		}
+		r :=  schema.Resources[0]
+		if len(r.ContentType) != 3 {
+			test.Errorf("Did not parse expected number of accept: %v", len(r.ContentType))
+		}
+		if r.ContentType[0] != "application/json" {
+			test.Errorf("Did not parse accept value correctly: %v (expected: application/json)", r.ContentType[0])
+		}
+		if r.ContentType[1] != "application/xml" {
+			test.Errorf("Did not parse accept value correctly: %v (expected: application/xml)", r.ContentType[1])
+		}
+		if r.ContentType[2] != "text/plain" {
+			test.Errorf("Did not parse accept value correctly: %v (expected: text/plain)", r.ContentType[2])
+		}
+		if r.Comment != "some comment" {
+			test.Errorf("Did not parse trailing comment correctly: %v", r.Comment)
+		}
+	}
+}
