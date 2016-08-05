@@ -1923,6 +1923,10 @@ type Resource struct {
 	// Optional hint for resource output content type.
 	//
 	Produces []string `json:"produces,omitempty" rdl:"optional"`
+
+	// Optional resource alias
+	//
+	Alias Identifier `json:"alias,omitempty" rdl:"optional"`
 }
 
 //

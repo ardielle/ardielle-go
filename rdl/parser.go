@@ -1918,6 +1918,9 @@ func (p *parser) parseResource(comment string) *Resource {
 	tok := p.scanner.Scan()
 	for tok != scanner.EOF || p.err == nil {
 		if tok == '}' {
+			if rune := p.scanner.Peek(); rune != '\n' && rune != scanner.EOF {
+				r.Alias = p.identifier("symbol")
+			}
 			break
 		} else {
 			switch tok {

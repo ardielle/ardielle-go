@@ -279,3 +279,29 @@ resource Any GET "/foo" {
 		}
 	}
 }
+
+func TestAlias(test *testing.T) {
+	schema, err := parseRDLString(`
+resource Any GET "/nil" {
+  expected OK;
+}
+
+resource Any GET "/foo" {
+  expected OK;
+} myFoo // comment to be ignored
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with alias: %v", err)
+	} else {
+		if len(schema.Resources) != 2 {
+			test.Errorf("Did not parse expected number of resources: %v", schema)
+		}
+		if schema.Resources[0].Alias != "" {
+			test.Errorf("Did not parse alias correctly (expected nil)")
+		}
+		r := schema.Resources[1]
+		if r.Alias != "myFoo" {
+			test.Errorf("Did not parse alias correctly: %v (expected myFoo)", r.Alias)
+		}
+	}
+}
