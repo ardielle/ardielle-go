@@ -16,6 +16,7 @@ import (
 	"strings"
 	"text/scanner"
 	"unicode"
+	"bytes"
 )
 
 type parser struct {
@@ -1960,6 +1961,20 @@ func (p *parser) parseResource(comment string) *Resource {
 					b := true
 					r.Async = &b
 					fcomment = ""
+				case "consumes":
+					consumes,comment := p.parseCommaSeparatedValuesTillNewline(r)
+					if len(consumes) > 0 {
+						r.Consumes = consumes
+					}
+					r.Comment = comment
+					fcomment = ""
+				case "produces":
+					produces,comment := p.parseCommaSeparatedValuesTillNewline(r)
+					if len(produces) > 0 {
+						r.Produces = produces
+					}
+					r.Comment = comment
+					fcomment = ""
 				default:
 					c := p.scanner.Peek()
 					if c == '.' {
@@ -2367,4 +2382,52 @@ func (p *parser) acceptLegacy(item string, warning string) bool {
 		p.warning(warning)
 	}
 	return true
+}
+
+func (p *parser) parseCommaSeparatedValuesTillNewline(r *Resource) ([]string, string) {
+	var buffer bytes.Buffer
+	var values []string
+	comment := r.Comment
+
+	c := p.skipWhitespaceExceptNewline()
+	for c != '\n' && c != scanner.EOF {
+		tok := p.scanner.Scan()
+		if tok == scanner.Comment {
+			comment,_ = p.parseComment(tok, comment)
+			if buffer.Len() > 0 {
+				values = append(values, buffer.String())
+			}
+			break
+		} else if tok == ',' {
+			values = append(values, buffer.String())
+			buffer.Reset()
+		} else {
+			buffer.WriteString(p.scanner.TokenText())
+		}
+
+		c = p.skipWhitespaceExceptNewline()
+		if c == '\n' {
+			values = append(values, buffer.String())
+			break
+		}
+	}
+	return values, comment
+}
+
+func (p *parser) isSpecialRune(ch rune) bool {
+	switch ch {
+	case '.': fallthrough
+	case ',': fallthrough
+	case ';': fallthrough
+	case '/': fallthrough
+	case '{': fallthrough
+	case '}': fallthrough
+	case '[': fallthrough
+	case ']': fallthrough
+	case '(': fallthrough
+	case ')': fallthrough
+	case '\n':
+		return true
+	}
+	return false
 }
