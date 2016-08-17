@@ -217,3 +217,65 @@ func TestIncludeTypeLookup(test *testing.T) {
 	//this tests that type lookup is correct across multiple included files
 	loadTestSchema(test, "k1_a.rdl")
 }
+
+func TestConsumes(test *testing.T) {
+	schema, err := parseRDLString(`
+resource Any GET "/foo" {
+  consumes application/json, application/xml    ,   text/plain   // some comment
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with consumes: %v", err)
+	} else {
+		if len(schema.Resources) != 1 {
+			test.Errorf("Did not parse expected number of resources: %v", schema)
+		}
+		r :=  schema.Resources[0]
+		if len(r.Consumes) != 3 {
+			test.Errorf("Did not parse expected number of consumes: %v", len(r.Consumes))
+		}
+		if r.Consumes[0] != "application/json" {
+			test.Errorf("Did not parse consumes value correctly: %v (expected: application/json)", r.Consumes[0])
+		}
+		if r.Consumes[1] != "application/xml" {
+			test.Errorf("Did not parse consumes value correctly: %v (expected: application/xml)", r.Consumes[1])
+		}
+		if r.Consumes[2] != "text/plain" {
+			test.Errorf("Did not parse consumes value correctly: %v (expected: text/plain)", r.Consumes[2])
+		}
+		if r.Comment != "some comment" {
+			test.Errorf("Did not parse trailing comment correctly: %v", r.Comment)
+		}
+	}
+}
+
+func TestProduces(test *testing.T) {
+	schema, err := parseRDLString(`
+resource Any GET "/foo" {
+  produces application/json, application/xml    ,   text/plain   // some comment
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with produces: %v", err)
+	} else {
+		if len(schema.Resources) != 1 {
+			test.Errorf("Did not parse expected number of resources: %v", schema)
+		}
+		r :=  schema.Resources[0]
+		if len(r.Produces) != 3 {
+			test.Errorf("Did not parse expected number of produces: %v", len(r.Produces))
+		}
+		if r.Produces[0] != "application/json" {
+			test.Errorf("Did not parse produces value correctly: %v (expected: application/json)", r.Produces[0])
+		}
+		if r.Produces[1] != "application/xml" {
+			test.Errorf("Did not parse produces value correctly: %v (expected: application/xml)", r.Produces[1])
+		}
+		if r.Produces[2] != "text/plain" {
+			test.Errorf("Did not parse produces value correctly: %v (expected: text/plain)", r.Produces[2])
+		}
+		if r.Comment != "some comment" {
+			test.Errorf("Did not parse trailing comment correctly: %v", r.Comment)
+		}
+	}
+}
