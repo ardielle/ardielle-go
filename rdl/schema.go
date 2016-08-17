@@ -1915,14 +1915,14 @@ type Resource struct {
 	Annotations map[ExtendedAnnotation]string `json:"annotations,omitempty" rdl:"optional"`
 
 	//
-	// Optional hint for resource acceptable input.
+	// Optional hint for resource acceptable input type.
 	//
-	Accept []string `json:"accept,omitempty" rdl:"optional"`
+	Consumes []string `json:"consumes,omitempty" rdl:"optional"`
 
 	//
 	// Optional hint for resource output content type.
 	//
-	ContentType []string `json:"content-type,omitempty" rdl:"optional"`
+	Produces []string `json:"produces,omitempty" rdl:"optional"`
 }
 
 //

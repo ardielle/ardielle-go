@@ -218,30 +218,30 @@ func TestIncludeTypeLookup(test *testing.T) {
 	loadTestSchema(test, "k1_a.rdl")
 }
 
-func TestAccept(test *testing.T) {
+func TestConsumes(test *testing.T) {
 	schema, err := parseRDLString(`
 resource Any GET "/foo" {
-  accept application/json, application/xml    ,   text/plain   // some comment
+  consumes application/json, application/xml    ,   text/plain   // some comment
 }
 `)
 	if err != nil {
-		test.Errorf("cannot parse valid RDL with accept: %v", err)
+		test.Errorf("cannot parse valid RDL with consumes: %v", err)
 	} else {
 		if len(schema.Resources) != 1 {
 			test.Errorf("Did not parse expected number of resources: %v", schema)
 		}
 		r :=  schema.Resources[0]
-		if len(r.Accept) != 3 {
-			test.Errorf("Did not parse expected number of accept: %v", len(r.Accept))
+		if len(r.Consumes) != 3 {
+			test.Errorf("Did not parse expected number of consumes: %v", len(r.Consumes))
 		}
-		if r.Accept[0] != "application/json" {
-			test.Errorf("Did not parse accept value correctly: %v (expected: application/json)", r.Accept[0])
+		if r.Consumes[0] != "application/json" {
+			test.Errorf("Did not parse consumes value correctly: %v (expected: application/json)", r.Consumes[0])
 		}
-		if r.Accept[1] != "application/xml" {
-			test.Errorf("Did not parse accept value correctly: %v (expected: application/xml)", r.Accept[1])
+		if r.Consumes[1] != "application/xml" {
+			test.Errorf("Did not parse consumes value correctly: %v (expected: application/xml)", r.Consumes[1])
 		}
-		if r.Accept[2] != "text/plain" {
-			test.Errorf("Did not parse accept value correctly: %v (expected: text/plain)", r.Accept[2])
+		if r.Consumes[2] != "text/plain" {
+			test.Errorf("Did not parse consumes value correctly: %v (expected: text/plain)", r.Consumes[2])
 		}
 		if r.Comment != "some comment" {
 			test.Errorf("Did not parse trailing comment correctly: %v", r.Comment)
@@ -249,30 +249,30 @@ resource Any GET "/foo" {
 	}
 }
 
-func TestContentType(test *testing.T) {
+func TestProduces(test *testing.T) {
 	schema, err := parseRDLString(`
 resource Any GET "/foo" {
-  content-type application/json, application/xml    ,   text/plain   // some comment
+  produces application/json, application/xml    ,   text/plain   // some comment
 }
 `)
 	if err != nil {
-		test.Errorf("cannot parse valid RDL with accept: %v", err)
+		test.Errorf("cannot parse valid RDL with produces: %v", err)
 	} else {
 		if len(schema.Resources) != 1 {
 			test.Errorf("Did not parse expected number of resources: %v", schema)
 		}
 		r :=  schema.Resources[0]
-		if len(r.ContentType) != 3 {
-			test.Errorf("Did not parse expected number of accept: %v", len(r.ContentType))
+		if len(r.Produces) != 3 {
+			test.Errorf("Did not parse expected number of produces: %v", len(r.Produces))
 		}
-		if r.ContentType[0] != "application/json" {
-			test.Errorf("Did not parse accept value correctly: %v (expected: application/json)", r.ContentType[0])
+		if r.Produces[0] != "application/json" {
+			test.Errorf("Did not parse produces value correctly: %v (expected: application/json)", r.Produces[0])
 		}
-		if r.ContentType[1] != "application/xml" {
-			test.Errorf("Did not parse accept value correctly: %v (expected: application/xml)", r.ContentType[1])
+		if r.Produces[1] != "application/xml" {
+			test.Errorf("Did not parse produces value correctly: %v (expected: application/xml)", r.Produces[1])
 		}
-		if r.ContentType[2] != "text/plain" {
-			test.Errorf("Did not parse accept value correctly: %v (expected: text/plain)", r.ContentType[2])
+		if r.Produces[2] != "text/plain" {
+			test.Errorf("Did not parse produces value correctly: %v (expected: text/plain)", r.Produces[2])
 		}
 		if r.Comment != "some comment" {
 			test.Errorf("Did not parse trailing comment correctly: %v", r.Comment)

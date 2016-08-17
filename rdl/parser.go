@@ -1934,13 +1934,6 @@ func (p *parser) parseResource(comment string) *Resource {
 				fcomment = p.parseLegacyComment(fcomment)
 			case scanner.Ident:
 				sym := p.scanner.TokenText()
-				rune := p.scanner.Peek()
-				// Parse multi word sym such as content-type
-				for !p.isWhitespace(rune) && !p.isSpecialRune(rune) && rune != scanner.EOF {
-					p.scanner.Scan()
-					sym += p.scanner.TokenText()
-					rune = p.scanner.Peek()
-				}
 				switch sym {
 				case "authenticate":
 					if r.Auth != nil {
@@ -1968,17 +1961,17 @@ func (p *parser) parseResource(comment string) *Resource {
 					b := true
 					r.Async = &b
 					fcomment = ""
-				case "accept":
-					accept,comment := p.parseCommaSeparatedValuesTillNewline(r)
-					if len(accept) > 0 {
-						r.Accept = accept
+				case "consumes":
+					consumes,comment := p.parseCommaSeparatedValuesTillNewline(r)
+					if len(consumes) > 0 {
+						r.Consumes = consumes
 					}
 					r.Comment = comment
 					fcomment = ""
-				case "content-type":
-					contentType,comment := p.parseCommaSeparatedValuesTillNewline(r)
-					if len(contentType) > 0 {
-						r.ContentType = contentType
+				case "produces":
+					produces,comment := p.parseCommaSeparatedValuesTillNewline(r)
+					if len(produces) > 0 {
+						r.Produces = produces
 					}
 					r.Comment = comment
 					fcomment = ""
