@@ -1924,9 +1924,10 @@ type Resource struct {
 	//
 	Produces []string `json:"produces,omitempty" rdl:"optional"`
 
-	// Optional resource alias
 	//
-	Alias Identifier `json:"alias,omitempty" rdl:"optional"`
+	// Optional resource name
+	//
+	Name Identifier `json:"name,omitempty" rdl:"optional"`
 }
 
 //

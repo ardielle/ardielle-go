@@ -280,28 +280,36 @@ resource Any GET "/foo" {
 	}
 }
 
-func TestAlias(test *testing.T) {
+func TestResourceName(test *testing.T) {
 	schema, err := parseRDLString(`
 resource Any GET "/nil" {
   expected OK;
 }
 
-resource Any GET "/foo" {
+resource Any GET "/foo" (name=myFoo) {
   expected OK;
-} myFoo // comment to be ignored
+}
+
+resource Any GET "/bar" (async, name    =  myBar, x_something   ) {
+  expected OK;
+}
 `)
 	if err != nil {
-		test.Errorf("cannot parse valid RDL with alias: %v", err)
+		test.Errorf("cannot parse valid RDL with resource name: %v", err)
 	} else {
-		if len(schema.Resources) != 2 {
+		if len(schema.Resources) != 3 {
 			test.Errorf("Did not parse expected number of resources: %v", schema)
 		}
-		if schema.Resources[0].Alias != "" {
-			test.Errorf("Did not parse alias correctly (expected nil)")
+		if schema.Resources[0].Name != "" {
+			test.Errorf("Did not parse resource name correctly (expected nil)")
 		}
 		r := schema.Resources[1]
-		if r.Alias != "myFoo" {
-			test.Errorf("Did not parse alias correctly: %v (expected myFoo)", r.Alias)
+		if r.Name != "myFoo" {
+			test.Errorf("Did not parse resource name correctly: %v (expected myFoo)", r.Name)
+		}
+		r = schema.Resources[2]
+		if r.Name != "myBar" {
+			test.Errorf("Did not parse resource name correctly: %v (expected myBar)", r.Name)
 		}
 	}
 }
