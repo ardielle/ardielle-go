@@ -1858,6 +1858,9 @@ func (p *parser) parseResourceOptions() map[ExtendedAnnotation]string {
 			switch strings.ToLower(optname) {
 			case "async":
 				options["async"] = ""
+			case "name":
+				p.expect("=")
+				options["name"] = string(p.identifier("resource name"))
 			default:
 				if strings.HasPrefix(optname, "x_") {
 					options = p.parseExtendedOption(options, ExtendedAnnotation(optname))
@@ -1905,6 +1908,10 @@ func (p *parser) parseResource(comment string) *Resource {
 				b := true
 				r.Async = &b
 				delete(options, "async")
+			}
+			if _, ok := options["name"]; ok {
+				r.Name = Identifier(options["name"])
+				delete(options, "name")
 			}
 		}
 		if len(options) > 0 {
