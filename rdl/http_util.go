@@ -60,6 +60,10 @@ type ResourceError struct {
 
 }
 
+func (e ResourceError) StatusCode() int {
+	return e.Code
+}
+
 func (e ResourceError) Error() string {
 	return fmt.Sprintf("%d %s", e.Code, e.Message)
 }
