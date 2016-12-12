@@ -383,6 +383,11 @@ func (rb *ResourceBuilder) Exception(sym string, typename string, comment string
 	return rb
 }
 
+func (rb *ResourceBuilder) Name(sym string) *ResourceBuilder {
+	rb.proto.Name = Identifier(sym)
+	return rb
+}
+
 func (rb *ResourceBuilder) Build() *Resource {
 	return &rb.proto
 }
