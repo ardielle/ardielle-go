@@ -17,6 +17,7 @@ import (
 	"text/scanner"
 	"unicode"
 	"bytes"
+	"errors"
 )
 
 type parser struct {
@@ -695,6 +696,36 @@ func (p *parser) baseType(t *Type) BaseType {
 	return inThisInclude
 }
 
+func (p *parser) resolvePattern(t *Type) (string, error) {
+	if t == nil {
+		return "", errors.New("nil type can't be resolved to a pattern")
+	}
+	currentType, lastType := t, t
+	tName, tType, _ := TypeInfo(currentType)
+	for tType != TypeRef(BaseTypeString.String()) {
+		currentType = p.registry.FindType(tType)
+		if currentType == nil {
+			break
+		}
+		tName, tType, _ = TypeInfo(currentType)
+		if TypeRef(tName) == tType {
+			// we've hit the base type if tName and tType match
+			tName, tType, _ = TypeInfo(lastType)
+			return "", errors.New(fmt.Sprintf("%s is not a String type", tName))
+		}
+		lastType = currentType
+	}
+
+	if currentType == nil {
+		if p.parent != nil {
+			return p.parent.resolvePattern(lastType)
+		} else {
+			return "", errors.New(fmt.Sprintf("no String base type found for %s", tName))
+		}
+	}
+	return currentType.StringTypeDef.Pattern, nil
+}
+
 func (p *parser) parseTypeRef(expected string) TypeRef {
 	sym := string(p.identifier(expected))
 	if p.err == nil {
@@ -840,13 +871,10 @@ func (p *parser) parseStringPatternOption(t *StringTypeDef) {
 			i = strings.Index(tail, "{")
 			continue
 		}
-		if p.baseType(rt) != BaseTypeString {
-			p.error("pattern references non-string type '" + refName + "': " + pat)
-			return
-		}
-		pat := rt.StringTypeDef.Pattern
-		if pat == "" {
-			p.error("pattern references string type '" + refName + "' which has no pattern")
+
+		pat, err := p.resolvePattern(rt)
+		if err != nil {
+			p.error(fmt.Sprintf("%s",err))
 			return
 		}
 		head = head + tail[:i] + pat

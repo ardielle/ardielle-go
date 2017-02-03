@@ -100,6 +100,9 @@ func TestParse(test *testing.T) {
 	parseBadRDL(test, `type Foo Struct { String foo; } type Bar Foo { String foo; }`)
 	parseBadRDL(test, `type Foo Struct { String bar; } resource Foo GET "/foo?d={debug}" {String debug (optinal); }`)
 	parseGoodRDL(test, `type Foo Any; type X Struct { Any y; } type Y Struct { Foo y;}`)
+	parseGoodRDL(test, `type A String (pattern="[a-z]"); type B A; type C B; type D string (pattern="{C}-{A}");`)
+
+
 
 	schema, err := parseRDLString(`type Base Struct { String bar; } type Foo Base;`)
 	if err != nil {
