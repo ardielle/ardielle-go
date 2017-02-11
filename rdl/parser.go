@@ -2049,9 +2049,6 @@ func (p *parser) parseResource(comment string) *Resource {
 				ok = true
 			}
 		}
-		if !ok {
-			p.error(r.Method + " on a resource with no corresponding input parameter")
-		}
 	}
 	return r
 }
