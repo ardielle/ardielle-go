@@ -54,26 +54,27 @@ func UnparseRDL(schema *Schema, out *bufio.Writer) error {
 
 func unparseType(t *Type) string {
 	switch t.Variant {
-	case TypeVariantStringTypeDef:
-		return unparseStringType(t.StringTypeDef)
+	//case TypeVariantBaseTypeDef: //never happens
 	case TypeVariantStructTypeDef:
 		return unparseStructType(t.StructTypeDef)
-	case TypeVariantArrayTypeDef:
-		return unparseArrayType(t.ArrayTypeDef)
 	case TypeVariantMapTypeDef:
 		return unparseMapType(t.MapTypeDef)
+	case TypeVariantArrayTypeDef:
+		return unparseArrayType(t.ArrayTypeDef)
 	case TypeVariantEnumTypeDef:
 		return unparseEnumType(t.EnumTypeDef)
-	case TypeVariantAliasTypeDef:
-		return unparseAliasType(t.AliasTypeDef)
-	case TypeVariantNumberTypeDef:
-		return unparseNumberType(t.NumberTypeDef)
 	case TypeVariantUnionTypeDef:
 		return unparseUnionType(t.UnionTypeDef)
+	case TypeVariantStringTypeDef:
+		return unparseStringType(t.StringTypeDef)
+	case TypeVariantBytesTypeDef:
+		return unparseBytesType(t.BytesTypeDef)
+	case TypeVariantNumberTypeDef:
+		return unparseNumberType(t.NumberTypeDef)
+	case TypeVariantAliasTypeDef:
+		return unparseAliasType(t.AliasTypeDef)
 	default:
-		fmt.Println("fix this:", t)
-		panic("fix me")
-		return "type ?\n"
+		return ""
 	}
 }
 
@@ -157,6 +158,33 @@ func unparseStringType(td *StringTypeDef) string {
 		}
 		o += "]"
 		options = append(options, o)
+	}
+	if td.Annotations != nil {
+		for k, v := range td.Annotations {
+			options = append(options, fmt.Sprintf("%s=%q", k, v))
+		}
+	}
+	if len(options) > 0 {
+		s = s + " (" + strings.Join(options, ", ") + ")"
+	}
+	return s + ";\n"
+}
+
+func unparseBytesType(td *BytesTypeDef) string {
+	s := ""
+	if td.Comment != "" {
+		s = formatComment(td.Comment, 0, MAX_COLUMNS)
+	}
+	s += fmt.Sprintf("type %s %s", td.Name, td.Type)
+	options := make([]string, 0)
+	if td.Size != nil {
+		options = append(options, fmt.Sprintf("size=%d", *td.Size))
+	}
+	if td.MaxSize != nil {
+		options = append(options, fmt.Sprintf("maxsize=%d", *td.MaxSize))
+	}
+	if td.MinSize != nil {
+		options = append(options, fmt.Sprintf("minsize=%d", *td.MinSize))
 	}
 	if td.Annotations != nil {
 		for k, v := range td.Annotations {
