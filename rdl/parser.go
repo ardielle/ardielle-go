@@ -1801,6 +1801,7 @@ func (p *parser) parseEnumType(typeName Identifier, supertypeName TypeRef, comme
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
 	t.Comment = comment
+	comment = ""
 	var tok rune
 	c := p.skipWhitespaceExceptNewline()
 	if c == ';' {
@@ -2208,6 +2209,7 @@ func (p *parser) addOutput(r *Resource, paramName string, input *ResourceInput) 
 	out.Header = input.Header
 	out.Optional = input.Optional
 	out.Annotations = input.Annotations
+	out.Comment = input.Comment
 	r.Outputs = append(r.Outputs, out)
 }
 
