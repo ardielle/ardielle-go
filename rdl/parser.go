@@ -5,6 +5,8 @@ package rdl
 
 import (
 	"bufio"
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,8 +18,6 @@ import (
 	"strings"
 	"text/scanner"
 	"unicode"
-	"bytes"
-	"errors"
 )
 
 type parser struct {
@@ -874,7 +874,7 @@ func (p *parser) parseStringPatternOption(t *StringTypeDef) {
 
 		pat, err := p.resolvePattern(rt)
 		if err != nil {
-			p.error(fmt.Sprintf("%s",err))
+			p.error(fmt.Sprintf("%s", err))
 			return
 		}
 		head = head + tail[:i] + pat
@@ -1998,14 +1998,14 @@ func (p *parser) parseResource(comment string) *Resource {
 					r.Async = &b
 					fcomment = ""
 				case "consumes":
-					consumes,comment := p.parseCommaSeparatedValuesTillNewline(r)
+					consumes, comment := p.parseCommaSeparatedValuesTillNewline(r)
 					if len(consumes) > 0 {
 						r.Consumes = consumes
 					}
 					r.Comment = comment
 					fcomment = ""
 				case "produces":
-					produces,comment := p.parseCommaSeparatedValuesTillNewline(r)
+					produces, comment := p.parseCommaSeparatedValuesTillNewline(r)
 					if len(produces) > 0 {
 						r.Produces = produces
 					}
@@ -2427,7 +2427,7 @@ func (p *parser) parseCommaSeparatedValuesTillNewline(r *Resource) ([]string, st
 	for c != '\n' && c != scanner.EOF {
 		tok := p.scanner.Scan()
 		if tok == scanner.Comment {
-			comment,_ = p.parseComment(tok, comment)
+			comment, _ = p.parseComment(tok, comment)
 			if buffer.Len() > 0 {
 				values = append(values, buffer.String())
 			}
@@ -2450,16 +2450,26 @@ func (p *parser) parseCommaSeparatedValuesTillNewline(r *Resource) ([]string, st
 
 func (p *parser) isSpecialRune(ch rune) bool {
 	switch ch {
-	case '.': fallthrough
-	case ',': fallthrough
-	case ';': fallthrough
-	case '/': fallthrough
-	case '{': fallthrough
-	case '}': fallthrough
-	case '[': fallthrough
-	case ']': fallthrough
-	case '(': fallthrough
-	case ')': fallthrough
+	case '.':
+		fallthrough
+	case ',':
+		fallthrough
+	case ';':
+		fallthrough
+	case '/':
+		fallthrough
+	case '{':
+		fallthrough
+	case '}':
+		fallthrough
+	case '[':
+		fallthrough
+	case ']':
+		fallthrough
+	case '(':
+		fallthrough
+	case ')':
+		fallthrough
 	case '\n':
 		return true
 	}

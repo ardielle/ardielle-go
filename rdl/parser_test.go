@@ -102,8 +102,6 @@ func TestParse(test *testing.T) {
 	parseGoodRDL(test, `type Foo Any; type X Struct { Any y; } type Y Struct { Foo y;}`)
 	parseGoodRDL(test, `type A String (pattern="[a-z]"); type B A; type C B; type D string (pattern="{C}-{A}");`)
 
-
-
 	schema, err := parseRDLString(`type Base Struct { String bar; } type Foo Base;`)
 	if err != nil {
 		test.Errorf("Cannot parse: %v\n", err)
@@ -233,7 +231,7 @@ resource Any GET "/foo" {
 		if len(schema.Resources) != 1 {
 			test.Errorf("Did not parse expected number of resources: %v", schema)
 		}
-		r :=  schema.Resources[0]
+		r := schema.Resources[0]
 		if len(r.Consumes) != 3 {
 			test.Errorf("Did not parse expected number of consumes: %v", len(r.Consumes))
 		}
@@ -264,7 +262,7 @@ resource Any GET "/foo" {
 		if len(schema.Resources) != 1 {
 			test.Errorf("Did not parse expected number of resources: %v", schema)
 		}
-		r :=  schema.Resources[0]
+		r := schema.Resources[0]
 		if len(r.Produces) != 3 {
 			test.Errorf("Did not parse expected number of produces: %v", len(r.Produces))
 		}
