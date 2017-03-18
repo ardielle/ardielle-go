@@ -84,7 +84,7 @@ func formatBlock(s string, leftCol int, rightCol int, prefix string) string {
 	}
 	tab := spaces(leftCol)
 	var buf bytes.Buffer
-	max := 80
+	max := rightCol
 	col := leftCol
 	lines := 1
 	tokens := strings.Split(s, " ")
