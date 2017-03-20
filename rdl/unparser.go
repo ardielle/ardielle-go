@@ -37,6 +37,9 @@ func UnparseRDL(schema *Schema, out *bufio.Writer) error {
 			if schema.Version != nil {
 				s += fmt.Sprintf("version %d;\n", *schema.Version)
 			}
+			if schema.Base != "" {
+				s += fmt.Sprintf("base %q;\n", schema.Base)
+			}
 			return s
 		},
 		"unparseType":     unparseType,
