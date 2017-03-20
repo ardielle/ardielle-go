@@ -35,6 +35,11 @@ func (sb *SchemaBuilder) Version(version int32) *SchemaBuilder {
 	return sb
 }
 
+func (sb *SchemaBuilder) Base(base string) *SchemaBuilder {
+	sb.proto.Base = base
+	return sb
+}
+
 func (sb *SchemaBuilder) Comment(comment string) *SchemaBuilder {
 	sb.proto.Comment = comment
 	return sb
