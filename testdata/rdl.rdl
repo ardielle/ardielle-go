@@ -238,7 +238,10 @@ type Resource Struct {
     Array<String> alternatives (optional); // The set of alternative but non-error response codes
     Map<String,ExceptionDef> exceptions (optional); // A map of symbolic response code to Exception definitions
     Bool async (optional); //A hint to server implementations that this resource would be better implemented with async I/O
-	Map<ExtendedAnnotation,String> annotations (optional); //additional annotations starting with "x_"
+    Map<ExtendedAnnotation,String> annotations (optional); //additional annotations starting with "x_"
+    Array<String> consumes (optional); // Optional hint for resource acceptable input types
+    Array<String> produces (optional); // Optional hint for resource output content types
+    Identifier name (optional); // The optional name of the resource
 }
 
 //
@@ -252,4 +255,5 @@ type Schema Struct {
     String comment (optional); // The comment for the entire schema
     Array<Type> types (optional); // The types this schema defines.
     Array<Resource> resources (optional); // The resources for a service this schema defines
+    String base (optional); //the base path for resources in the schema.
 }

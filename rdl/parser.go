@@ -192,6 +192,10 @@ func (p *parser) parseSchema() {
 				p.schema.Comment = p.mergeComment(p.schema.Comment, comment)
 				comment = ""
 				p.parseName()
+			case "base":
+				p.schema.Comment = p.mergeComment(p.schema.Comment, comment)
+				comment = ""
+				p.parseBasepath()
 			case "version":
 				p.schema.Comment = p.mergeComment(p.schema.Comment, comment)
 				comment = ""
@@ -323,6 +327,17 @@ func (p *parser) parseVersion() {
 		if p.err == nil {
 			p.schema.Version = &n
 		}
+	}
+}
+
+func (p *parser) parseBasepath() {
+	if p.err != nil {
+		return
+	}
+	if p.schema.Base != "" {
+		p.error("duplicate base path declaration")
+	} else {
+		p.schema.Base = p.stringLiteral("base path for resources")
 	}
 }
 
