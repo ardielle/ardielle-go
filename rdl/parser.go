@@ -381,14 +381,71 @@ func (p *parser) parseInclude() {
 			p.err = err
 		} else {
 			for _, t := range schema.Types {
+				p.addTypeAnnotation(t, "x_included_from", fname)
 				p.registerType(t)
 			}
 			for _, rez := range schema.Resources {
+				if rez.Annotations == nil {
+					rez.Annotations = make(map[ExtendedAnnotation]string)
+				}
+				rez.Annotations["x_included_from"] = fname
 				p.registerResource(rez)
 			}
 			p.registerIncludedFile(path)
 		}
 	}
+}
+
+func (p *parser) addTypeAnnotation(t *Type, key ExtendedAnnotation, value string) {
+	var anno map[ExtendedAnnotation]string
+	switch t.Variant {
+	case TypeVariantAliasTypeDef:
+		if t.AliasTypeDef.Annotations == nil {
+			t.AliasTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.AliasTypeDef.Annotations
+	case TypeVariantStringTypeDef:
+		if t.StringTypeDef.Annotations == nil {
+			t.StringTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.StringTypeDef.Annotations
+	case TypeVariantNumberTypeDef:
+		if t.NumberTypeDef.Annotations == nil {
+			t.NumberTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.NumberTypeDef.Annotations
+	case TypeVariantArrayTypeDef:
+		if t.ArrayTypeDef.Annotations == nil {
+			t.ArrayTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.ArrayTypeDef.Annotations
+	case TypeVariantMapTypeDef:
+		if t.MapTypeDef.Annotations == nil {
+			t.MapTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.MapTypeDef.Annotations
+	case TypeVariantStructTypeDef:
+		if t.StructTypeDef.Annotations == nil {
+			t.StructTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.StructTypeDef.Annotations
+	case TypeVariantBytesTypeDef:
+		if t.BytesTypeDef.Annotations == nil {
+			t.BytesTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.BytesTypeDef.Annotations
+	case TypeVariantEnumTypeDef:
+		if t.EnumTypeDef.Annotations == nil {
+			t.EnumTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.EnumTypeDef.Annotations
+	case TypeVariantUnionTypeDef:
+		if t.UnionTypeDef.Annotations == nil {
+			t.UnionTypeDef.Annotations = make(map[ExtendedAnnotation]string)
+		}
+		anno = t.UnionTypeDef.Annotations
+	}
+	anno[key] = value
 }
 
 //prefix the type (and its constituents) with the given prefix, used when "use"ing another schema.
