@@ -396,6 +396,15 @@ func (p *parser) parseInclude() {
 	}
 }
 
+func (p *parser) hasAnnotation(anno map[ExtendedAnnotation]string, key ExtendedAnnotation) bool {
+	for k, _ := range anno {
+		if k == key {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *parser) addTypeAnnotation(t *Type, key ExtendedAnnotation, value string) {
 	var anno map[ExtendedAnnotation]string
 	switch t.Variant {
@@ -445,7 +454,9 @@ func (p *parser) addTypeAnnotation(t *Type, key ExtendedAnnotation, value string
 		}
 		anno = t.UnionTypeDef.Annotations
 	}
-	anno[key] = value
+	if !p.hasAnnotation(anno, key) {
+		anno[key] = value
+	}
 }
 
 //prefix the type (and its constituents) with the given prefix, used when "use"ing another schema.
