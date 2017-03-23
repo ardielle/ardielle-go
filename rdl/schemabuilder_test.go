@@ -18,4 +18,14 @@ func TestSchemaBuilder(test *testing.T) {
 		test.Errorf("TestSchemaBuilder: %s", errmsg)
 		return
 	}
+
+	sb := NewSchemaBuilder("test")
+	tb := NewStructTypeBuilder("Struct", "foo").Comment("description")
+	tb.Field("field1", "Timestamp", false, nil, "The timestamp field")
+	tb.Field("field2", "UUID", false, nil, "The uuid field")
+	sb.AddType(tb.Build())
+	schema = sb.Build()
+	if schema == nil {
+		test.Errorf("TestSchemaBuilder: Cannot build schema with certain base types")
+	}
 }

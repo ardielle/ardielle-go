@@ -58,8 +58,9 @@ func (sb *SchemaBuilder) AddResource(r *Resource) *SchemaBuilder {
 func (sb *SchemaBuilder) Build() *Schema {
 	var ordered []*Type
 	all := make(map[string]*Type)
-	resolved := map[string]bool{
-		"String": true,
+	resolved := make(map[string]bool)
+	for _, bt := range namesBaseType {
+		resolved[bt] = true
 	}
 	for _, t := range sb.proto.Types {
 		name, _, _ := TypeInfo(t)
@@ -75,7 +76,9 @@ func (sb *SchemaBuilder) Build() *Schema {
 
 func (sb *SchemaBuilder) isBaseType(name string) bool {
 	switch name {
-	case "String", "Bytes", "Bool", "Int8", "Int16", "Int32", "Int64", "Float32", "Float64":
+	case "Bool", "Int8", "Int16", "Int32", "Int64", "Float32", "Float64":
+		return true
+	case "String", "Bytes", "Timestamp", "Symbol", "UUID":
 		return true
 	case "Struct", "Array", "Map", "Enum", "Union", "Any":
 		return true
@@ -85,31 +88,15 @@ func (sb *SchemaBuilder) isBaseType(name string) bool {
 }
 
 func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all map[string]*Type, name, super string) []*Type {
-	//fmt.Println("resolve", name, super)
 	if _, ok := resolved[name]; ok || sb.isBaseType(name) {
-		//fmt.Println(" -> already resolved!")
 		return ordered
 	}
 	t := all[name]
-	if t == nil {
-		fmt.Println("Whoops:, not found:", name)
-	}
 	switch super {
-	case "String", "Bytes", "Bool", "Int8", "Int16", "Int32", "Int64", "Float32", "Float64":
-		//break, no dependencies
+	case "String", "Bytes", "Bool", "Int8", "Int16", "Int32", "Int64", "Float32", "Float64", "UUID", "Timestamp":
+		//no dependencies
 	case "Array":
 		ordered = sb.resolveRef(ordered, resolved, all, string(t.ArrayTypeDef.Items))
-		/*		iname := t.ArrayTypeDef.Items
-				if !sb.isBaseType(string(iname)) {
-					itype := all[string(iname)]
-					if itype == nil {
-						fmt.Println("Uh OH, don't know this one:", iname)
-					}
-					_, isuper, _ := TypeInfo(itype)
-					fmt.Println("recurse on items:", iname, isuper)
-					ordered = sb.resolve(ordered, resolved, all, string(iname), string(isuper))
-				}
-		*/
 	case "Map":
 		ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Items))
 		ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Keys))
@@ -127,9 +114,6 @@ func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all 
 func (sb *SchemaBuilder) resolveRef(ordered []*Type, resolved map[string]bool, all map[string]*Type, ref string) []*Type {
 	if !sb.isBaseType(ref) {
 		t := all[ref]
-		if t == nil {
-			fmt.Println("WHOA", ref)
-		}
 		_, super, _ := TypeInfo(t)
 		ordered = sb.resolve(ordered, resolved, all, ref, string(super))
 	}
