@@ -337,7 +337,11 @@ func (p *parser) parseBasepath() {
 	if p.schema.Base != "" {
 		p.error("duplicate base path declaration")
 	} else {
-		p.schema.Base = p.stringLiteral("base path for resources")
+		base := p.stringLiteral("base path for resources")
+		p.schema.Comment = p.statementEnd(p.schema.Comment)
+		if p.err == nil {
+			p.schema.Base = base
+		}
 	}
 }
 

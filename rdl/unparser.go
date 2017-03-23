@@ -27,6 +27,7 @@ func UnparseRDLFile(schema *Schema, filename string) error {
 }
 
 func UnparseRDL(schema *Schema, out *bufio.Writer) error {
+	reg := newTypeRegistry(schema)
 	funcMap := template.FuncMap{
 		"header": func() string {
 			s := formatComment(schema.Comment, 0, MAX_COLUMNS)
@@ -42,8 +43,8 @@ func UnparseRDL(schema *Schema, out *bufio.Writer) error {
 			}
 			return s
 		},
-		"unparseType":     unparseType,
-		"unparseResource": unparseResource,
+		"unparseType":     func(t *Type) string { return unparseType(reg, t) },
+		"unparseResource": func(r *Resource) string { return unparseResource(reg, r) },
 	}
 	unparseTemplate := `{{header}}{{range .Types}}
 {{unparseType .}}{{end}}
@@ -55,11 +56,11 @@ func UnparseRDL(schema *Schema, out *bufio.Writer) error {
 	return err
 }
 
-func unparseType(t *Type) string {
+func unparseType(reg TypeRegistry, t *Type) string {
 	switch t.Variant {
 	//case TypeVariantBaseTypeDef: //never happens
 	case TypeVariantStructTypeDef:
-		return unparseStructType(t.StructTypeDef)
+		return unparseStructType(reg, t.StructTypeDef)
 	case TypeVariantMapTypeDef:
 		return unparseMapType(t.MapTypeDef)
 	case TypeVariantArrayTypeDef:
@@ -99,11 +100,18 @@ func unparseNumberValue(n *Number) string {
 		return ""
 	}
 }
-func unparseLiteral(o interface{}) string {
+
+func unparseLiteral(reg TypeRegistry, tref TypeRef, o interface{}) string {
 	switch v := o.(type) {
 	case *Number:
 		return unparseNumberValue(v)
 	case string:
+		if tref != "String" {
+			t := reg.BaseTypeName(tref)
+			if t == "Enum" {
+				return v
+			}
+		}
 		return fmt.Sprintf("%q", v)
 	default:
 		return fmt.Sprint(o)
@@ -268,7 +276,7 @@ func unparseMapType(td *MapTypeDef) string {
 	return s
 }
 
-func unparseStructType(td *StructTypeDef) string {
+func unparseStructType(reg TypeRegistry, td *StructTypeDef) string {
 	s := ""
 	if td.Comment != "" {
 		s = formatComment(td.Comment, 0, MAX_COLUMNS)
@@ -310,7 +318,8 @@ func unparseStructType(td *StructTypeDef) string {
 			options = append(options, "optional")
 		}
 		if f.Default != nil {
-			options = append(options, fmt.Sprintf("default=%s", unparseLiteral(f.Default)))
+			//bug: enum literals get quoted, RDL spec says they shouldn't
+			options = append(options, fmt.Sprintf("default=%s", unparseLiteral(reg, f.Type, f.Default)))
 		}
 		if f.Annotations != nil {
 			for k, v := range f.Annotations {
@@ -412,7 +421,7 @@ func unparseQueryParam(r *Resource) string {
 	return q
 }
 
-func unparseResource(r *Resource) string {
+func unparseResource(reg TypeRegistry, r *Resource) string {
 	s := ""
 	if r.Comment != "" {
 		s = formatComment(r.Comment, 0, MAX_COLUMNS)
