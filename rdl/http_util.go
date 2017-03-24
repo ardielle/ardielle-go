@@ -70,6 +70,7 @@ func (e ResourceError) Error() string {
 
 // JSONResponse provides response encoded as JSON.
 func JSONResponse(w http.ResponseWriter, code int, data interface{}) {
+	w.Header()["Content-Type"] = []string{"application/json"}
 	w.WriteHeader(code)
 	switch code {
 	case 204, 304:
