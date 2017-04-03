@@ -101,8 +101,10 @@ func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all 
 		ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Items))
 		ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Keys))
 	case "Struct":
-		for _, f := range t.StructTypeDef.Fields {
-			ordered = sb.resolveRef(ordered, resolved, all, string(f.Type))
+		if t.StructTypeDef != nil {
+			for _, f := range t.StructTypeDef.Fields {
+				ordered = sb.resolveRef(ordered, resolved, all, string(f.Type))
+			}
 		}
 	default:
 		ordered = sb.resolveRef(ordered, resolved, all, string(super))
