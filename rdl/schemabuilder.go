@@ -96,10 +96,14 @@ func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all 
 	case "String", "Bytes", "Bool", "Int8", "Int16", "Int32", "Int64", "Float32", "Float64", "UUID", "Timestamp":
 		//no dependencies
 	case "Array":
-		ordered = sb.resolveRef(ordered, resolved, all, string(t.ArrayTypeDef.Items))
+		if t.ArrayTypeDef != nil {
+			ordered = sb.resolveRef(ordered, resolved, all, string(t.ArrayTypeDef.Items))
+		}
 	case "Map":
-		ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Items))
-		ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Keys))
+		if t.MapTypeDef != nil {
+			ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Items))
+			ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Keys))
+		}
 	case "Struct":
 		if t.StructTypeDef != nil {
 			for _, f := range t.StructTypeDef.Fields {
