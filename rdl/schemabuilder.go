@@ -6,6 +6,7 @@ package rdl
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 var _ = json.Marshal
@@ -60,27 +61,27 @@ func (sb *SchemaBuilder) Build() *Schema {
 	all := make(map[string]*Type)
 	resolved := make(map[string]bool)
 	for _, bt := range namesBaseType {
-		resolved[bt] = true
+		resolved[strings.ToLower(bt)] = true
 	}
 	for _, t := range sb.proto.Types {
 		name, _, _ := TypeInfo(t)
-		all[string(name)] = t
+		all[strings.ToLower(string(name))] = t
 	}
 	for _, t := range sb.proto.Types {
 		name, super, _ := TypeInfo(t)
-		ordered = sb.resolve(ordered, resolved, all, string(name), string(super))
+		ordered = sb.resolve(ordered, resolved, all, strings.ToLower(string(name)), strings.ToLower(string(super)))
 	}
 	sb.proto.Types = ordered
 	return sb.proto
 }
 
 func (sb *SchemaBuilder) isBaseType(name string) bool {
-	switch name {
-	case "Bool", "Int8", "Int16", "Int32", "Int64", "Float32", "Float64":
+	switch strings.ToLower(name) {
+	case "bool", "int8", "int16", "int32", "int64", "float32", "float64":
 		return true
-	case "String", "Bytes", "Timestamp", "Symbol", "UUID":
+	case "string", "bytes", "timestamp", "symbol", "uuid":
 		return true
-	case "Struct", "Array", "Map", "Enum", "Union", "Any":
+	case "struct", "array", "map", "enum", "union", "any":
 		return true
 	default:
 		return false
@@ -92,26 +93,26 @@ func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all 
 		return ordered
 	}
 	t := all[name]
-	switch super {
-	case "String", "Bytes", "Bool", "Int8", "Int16", "Int32", "Int64", "Float32", "Float64", "UUID", "Timestamp":
+	switch strings.ToLower(super) {
+	case "string", "bytes", "bool", "int8", "int16", "int32", "int64", "float32", "float64", "uuid", "timestamp":
 		//no dependencies
-	case "Array":
+	case "array":
 		if t.ArrayTypeDef != nil {
-			ordered = sb.resolveRef(ordered, resolved, all, string(t.ArrayTypeDef.Items))
+			ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.ArrayTypeDef.Items)))
 		}
-	case "Map":
+	case "map":
 		if t.MapTypeDef != nil {
-			ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Items))
-			ordered = sb.resolveRef(ordered, resolved, all, string(t.MapTypeDef.Keys))
+			ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.MapTypeDef.Items)))
+			ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.MapTypeDef.Keys)))
 		}
-	case "Struct":
+	case "struct":
 		if t.StructTypeDef != nil {
 			for _, f := range t.StructTypeDef.Fields {
-				ordered = sb.resolveRef(ordered, resolved, all, string(f.Type))
+				ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(f.Type)))
 			}
 		}
 	default:
-		ordered = sb.resolveRef(ordered, resolved, all, string(super))
+		ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(super)))
 	}
 	resolved[name] = true
 	return append(ordered, t)
@@ -121,7 +122,7 @@ func (sb *SchemaBuilder) resolveRef(ordered []*Type, resolved map[string]bool, a
 	if !sb.isBaseType(ref) {
 		t := all[ref]
 		_, super, _ := TypeInfo(t)
-		ordered = sb.resolve(ordered, resolved, all, ref, string(super))
+		ordered = sb.resolve(ordered, resolved, all, ref, strings.ToLower(string(super)))
 	}
 	return ordered
 }
@@ -129,7 +130,7 @@ func (sb *SchemaBuilder) resolveRef(ordered []*Type, resolved map[string]bool, a
 func (sb *SchemaBuilder) find(ordered []*Type, name string) *Type {
 	for _, t := range ordered {
 		n, _, _ := TypeInfo(t)
-		if name == string(n) {
+		if strings.ToLower(name) == strings.ToLower(string(n)) {
 			return t
 		}
 	}
