@@ -9,12 +9,14 @@ import (
 //go:generate go run generator.go
 
 func BenchmarkA(b *testing.B) {
+	rdl.ValidatorUseCache(false)
 	for i := 0; i < b.N; i++ {
 		_ = rdl.Validate(TestA.CodegenSchema(), "StringStruct", TestA.Example)
 	}
 }
 
 func BenchmarkB(b *testing.B) {
+	rdl.ValidatorUseCache(true)
 	for i := 0; i < b.N; i++ {
 		_ = rdl.Validate(TestA.CodegenSchema(), "StringStruct", TestA.Example)
 	}
