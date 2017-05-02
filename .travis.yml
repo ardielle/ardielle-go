@@ -2,5 +2,11 @@ language: go
 
 go: 1.6
 
+before_install:  # generate any other needed files
+  - go generate ./...
+  
 before_script:
   - go vet ./...
+
+after_success:  # run benchmarks
+  - go test -v -bench . -run ^$ ./...
