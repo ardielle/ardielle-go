@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 //
@@ -40,6 +41,11 @@ type validator struct {
 	schema   *Schema
 }
 
+var validatorCache = struct {
+	sync.RWMutex
+	m map[*Schema]*validator
+}{m: make(map[*Schema]*validator)}
+
 var useValidatorCache bool
 
 func ValidatorUseCache(flag bool) {
@@ -48,9 +54,32 @@ func ValidatorUseCache(flag bool) {
 
 func getValidator(schema *Schema) *validator {
 	var v *validator
-	v = &validator{
-		schema:   schema,
-		registry: NewTypeRegistry(schema),
+	if !useValidatorCache {
+		v = &validator{
+			schema:   schema,
+			registry: NewTypeRegistry(schema),
+		}
+		return v
+	}
+
+	validatorCache.RLock()
+	if v, ok := validatorCache.m[schema]; ok {
+		validatorCache.RUnlock()
+		return v
+	}
+	validatorCache.RUnlock()
+
+	validatorCache.Lock()
+	defer validatorCache.Unlock()
+
+	// Check to see if someone else got in and wrote it prior to us
+	v, ok := validatorCache.m[schema]
+	if !ok {
+		v = &validator{
+			schema:   schema,
+			registry: NewTypeRegistry(schema),
+		}
+		validatorCache.m[schema] = v
 	}
 	return v
 }
