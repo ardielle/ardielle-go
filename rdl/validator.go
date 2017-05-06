@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 //
@@ -34,41 +35,91 @@ func (v Validation) String() string {
 	return string(data)
 }
 
+// A validator contains the requisite information to validate a schema against its types
 type validator struct {
 	registry TypeRegistry
 	schema   *Schema
 }
 
+var validatorCache = struct {
+	sync.RWMutex
+	m map[*Schema]*validator
+}{m: make(map[*Schema]*validator)}
+
+var useValidatorCache bool
+
+func ValidatorUseCache(flag bool) {
+	useValidatorCache = flag
+}
+
+func getValidator(schema *Schema) *validator {
+	var v *validator
+	if !useValidatorCache {
+		v = &validator{
+			schema:   schema,
+			registry: NewTypeRegistry(schema),
+		}
+		return v
+	}
+
+	validatorCache.RLock()
+	if v, ok := validatorCache.m[schema]; ok {
+		validatorCache.RUnlock()
+		return v
+	}
+	validatorCache.RUnlock()
+
+	validatorCache.Lock()
+	defer validatorCache.Unlock()
+
+	// Check to see if someone else got in and wrote it prior to us
+	v, ok := validatorCache.m[schema]
+	if !ok {
+		v = &validator{
+			schema:   schema,
+			registry: NewTypeRegistry(schema),
+		}
+		validatorCache.m[schema] = v
+	}
+	return v
+}
+
 // Validate tests the provided generic data against a type in the specified schema. If the typename is empty,
 // an attempt to guess the type is made, otherwise the check is done against the single type.
 func Validate(schema *Schema, typename string, data interface{}) Validation {
-	checker := new(validator)
-	checker.registry = NewTypeRegistry(schema)
-	checker.schema = schema
+	v := getValidator(schema)
+	return validateWithValidator(v, typename, data)
+}
 
-	if schema.Types == nil {
-		return checker.bad("top level", "Schema contains no types", data, "")
+// ValidateWithValidator tests the provided generic data using the supplied validator.  If the typename is empty,
+// an attempt to guess the type is made, otherwise the check is done against the single type.
+// Supplying the validator allows it to be reused between validations rather than constructing anew
+func validateWithValidator(validator *validator, typename string, data interface{}) Validation {
+	typelist := validator.schema.Types
+	if typelist == nil {
+		return validator.bad("top level", "Schema contains no types", data, "")
 	}
 	if typename == "" {
 		//iterate over the types until we find the most (defined last) general match
 		//But: not always useful: if structs are not "closed", they match on almost anything.
-		typelist := schema.Types
 		for i := len(typelist) - 1; i >= 0; i-- {
 			t := typelist[i]
 			tName, _, _ := TypeInfo(t)
-			v := checker.validate(t, data, string(tName))
+			v := validator.validate(t, data, string(tName))
 			if v.Error == "" {
 				return v
 			}
 		}
-		return checker.bad("top level", "Cannot determine type of data in schema", data, "")
+		return validator.bad("top level", "Cannot determine type of data in schema", data, "")
 	}
+
 	context := typename
-	typedef := checker.registry.FindType(TypeRef(typename))
+	typedef := validator.registry.FindType(TypeRef(typename))
+
 	if typedef != nil {
-		return checker.validate(typedef, data, context)
+		return validator.validate(typedef, data, context)
 	}
-	return checker.bad(context, "No such type", nil, "")
+	return validator.bad(context, "No such type", nil, "")
 }
 
 func (checker *validator) resolveAliases(typedef *Type, context string) *Type {

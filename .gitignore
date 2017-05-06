@@ -1,4 +1,6 @@
 *~
 src
 Makefile
+rdl/_gen
 *.iml
+.idea
