@@ -1075,11 +1075,6 @@ func (p *parser) skipWhitespaceExceptNewline() rune {
 }
 
 func (p *parser) parseStringTypeSpec(typeName Identifier, supertypeName TypeRef, base string) *Type {
-	/*	if supertypeName != "String" { //limitation: cannot specify subtype other string types to add options. Must descend directly from String
-			comment = p.statementEnd(comment)
-			return makeAliasType(TypeName(typeName), supertypeName, comment)
-		}
-	*/
 	t := NewStringTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
@@ -1334,12 +1329,10 @@ func isSimpleMapType(mt *MapTypeDef) bool {
 
 func (p *parser) parseStructField(t *StructTypeDef, fieldType TypeName, fieldSuperType TypeRef, comment string) *StructFieldDef {
 	field := NewStructFieldDef()
-	//already parse the supertype name
 	embeddedTypeName := p.genTypeName(string(t.Name))
 	var ft *Type
 	switch fieldType {
 	case "Struct", "Map", "Array", "String", "Bytes", "Union", "Enum", "Int32", "Int64", "Int16", "Int8", "Float32", "Float64":
-		//xxx
 		ft = p.parseTypeSpec(Identifier(embeddedTypeName), fieldSuperType)
 	default:
 		ft = p.findType(TypeRef(fieldType))
@@ -1433,206 +1426,6 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType TypeName, fieldSup
 	}
 	return field
 }
-
-/*func (p *parser) xparseStructField(t *StructTypeDef, fieldType string, fieldSuperType string, comment string) *StructFieldDef {
-	var embeddedTypeName string
-	var embeddedType *Type
-	var embeddedAnnotations map[ExtendedAnnotation]string
-	field := NewStructFieldDef()
-	tok := p.scanner.Scan()
-	optional := false
-//replace with parseTypeSpec for all this
-	ft := p.findType(TypeRef(fieldType))
-	bt := p.baseType(ft)
-	if tok == '<' {
-		switch strings.ToLower(fieldType) {
-		case "array":
-			tt := p.typeSpec()
-			if p.err != nil {
-				return nil
-			}
-			if tt != nil {
-				s, _, _ := TypeInfo(tt)
-				field.Items = TypeRef(s)
-			}
-			p.expect(">")
-		case "map":
-			tk := p.typeSpec()
-			if p.err != nil {
-				return nil
-			}
-			if tk == nil { //"any"
-				p.error("Map key types must derive from String or Symbol")
-				return nil
-			}
-			skeys, _, _ := TypeInfo(tk)
-			btkeys := p.baseTypeByName(TypeRef(skeys))
-			if btkeys != BaseTypeString && btkeys != BaseTypeSymbol {
-				p.error("Map key types must derive from String or Symbol")
-				return nil
-			}
-			field.Keys = TypeRef(skeys)
-			p.expect(",")
-			ti := p.typeSpec()
-			if ti != nil {
-				if p.err != nil {
-					return nil
-				}
-				sitems, _, _ := TypeInfo(ti)
-				field.Items = TypeRef(sitems)
-			}
-			p.expect(">")
-		default:
-			p.error("parameterized type only supported for arrays and maps")
-			return nil
-		}
-		tok = p.scanner.Scan()
-	}
-	if tok == '.' {
-		s := p.identifier("type name")
-		if p.err != nil {
-			return nil
-		}
-		fieldType = fieldType + "." + string(s)
-		tok = p.scanner.Scan()
-	}
-	if tok == '{' {
-		switch bt {
-		case BaseTypeStruct:
-			embeddedTypeName = p.genTypeName(string(t.Name))
-			embeddedType = p.parseStructTypeSpec(Identifier(embeddedTypeName), TypeRef(fieldSuperType))
-//			embeddedType = &Type{Variant: TypeVariantStructTypeDef, StructTypeDef: NewStructTypeDef()}
-//			embeddedType.StructTypeDef.Name = TypeName(embeddedTypeName)
-//			embeddedType.StructTypeDef.Type = TypeRef(fieldSuperType)
-//			embeddedAnnotations = make(map[ExtendedAnnotation]string)
-//			embeddedType.StructTypeDef.Annotations = embeddedAnnotations
-//			if nil ==
-//				return nil
-//			}
-			tok = p.scanner.Scan()
-		default:
-			fmt.Println("Unsupported structured inline type:", bt)
-		}
-	}
-	field.Type = TypeRef(fieldType)
-	if tok == scanner.Ident {
-		field.Name = Identifier(p.scanner.TokenText())
-		c := p.skipWhitespaceExceptNewline()
-		if c == '(' {
-			p.scanner.Next()
-			tok = p.scanner.Scan()
-			commaExpected := false
-			for tok != ')' {
-				if commaExpected {
-					if tok != ',' {
-						p.expectedError("','")
-						return nil
-					}
-					tok = p.scanner.Scan()
-				} else {
-					commaExpected = true
-				}
-				if tok != scanner.Ident {
-					p.error("malformed field option list")
-					return nil
-				}
-				optname := p.scanner.TokenText()
-				switch optname {
-				case "optional":
-					optional = true
-				case "default":
-					var val interface{}
-					p.expect("=")
-					switch bt {
-					case BaseTypeString:
-						val = p.stringLiteral("String literal")
-					case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
-						val = p.numericLiteral(fmt.Sprintf("%v literal", bt))
-					case BaseTypeBool:
-						s := p.identifier("'true' or 'false'")
-						val = "true" == s
-					case BaseTypeEnum:
-						s := p.identifier("enum symbol")
-						val = s
-					default:
-						p.error(fmt.Sprintf("cannot provide default value for a %v type", bt))
-						return nil
-					}
-					field.Default = val
-				default:
-					if strings.HasPrefix(optname, "x_") {
-						field.Annotations = p.parseExtendedOption(field.Annotations, ExtendedAnnotation(optname))
-					} else {
-						switch bt {
-*/
-/*
-	case BaseTypeString:
-		if embeddedType == nil {
-			embeddedTypeName = p.genTypeName(string(t.Name))
-			embeddedType = &Type{Variant: TypeVariantStringTypeDef, StringTypeDef: NewStringTypeDef()}
-			embeddedType.StringTypeDef.Name = TypeName(embeddedTypeName)
-			embeddedType.StringTypeDef.Type = TypeRef(fieldSuperType)
-			embeddedAnnotations = make(map[ExtendedAnnotation]string)
-			embeddedType.StringTypeDef.Annotations = embeddedAnnotations
-		}
-		switch strings.ToLower(optname) {
-		case "maxsize":
-			p.expect("=")
-			n := p.int32Literal("integer value")
-			embeddedType.StringTypeDef.MaxSize = &n
-		case "minsize":
-			p.expect("=")
-			n := p.int32Literal("integer value")
-			embeddedType.StringTypeDef.MinSize = &n
-		case "pattern":
-			p.parseStringPatternOption(embeddedType.StringTypeDef)
-		case "values":
-			p.parseStringValuesOption(embeddedType.StringTypeDef)
-		default:
-			p.error("unsupported String field option: " + optname)
-			return nil
-		}
-	case BaseTypeBytes:
-		fmt.Println("field option for Bytes:", optname)
-	case BaseTypeSymbol:
-		fmt.Println("field option for Symbol:", optname)
-	case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
-		fmt.Println("field option for Number:", optname)
-	case BaseTypeStruct:
-		fmt.Println("field option for Struct:", optname)
-*/
-/*						default:
-							p.error("unsupported Struct field option: " + optname)
-							return nil
-						}
-					}
-				}
-				if p.err != nil {
-					return nil
-				}
-				tok = p.scanner.Scan()
-			}
-		}
-		field.Comment = p.statementEnd(comment)
-	} else {
-		p.expectedError("field name")
-	}
-	if optional {
-		field.Optional = true
-	} else {
-		ft := p.findType(TypeRef(field.Type))
-		if p.isForwardTypeRef(ft) {
-			p.error(fmt.Sprintf("Recursively typed fields must be optional: field '%s' in struct %s", field.Name, t.Name))
-		}
-	}
-	if embeddedType != nil {
-		embeddedAnnotations["x_struct_field"] = string(t.Name) + "." + string(field.Name)
-		p.registerType(embeddedType)
-		field.Type = TypeRef(embeddedTypeName)
-	}
-	return field
-}
-*/
 
 func (p *parser) genTypeName(base string) string {
 	p.gensym++
@@ -2124,10 +1917,6 @@ func (p *parser) parseEnumTypeSpec(typeName Identifier, supertypeName TypeRef) *
 			}
 		}
 	}
-	//	if c != '{' {
-	//		p.expectedError("'{'")
-	//		return nil
-	//	}
 	p.expect("{")
 	tok = p.scanner.Scan()
 	if tok == scanner.Comment {
