@@ -321,3 +321,48 @@ resource Any GET "/bar" (async, name    =  myBar, x_something   ) {
 		}
 	}
 }
+
+func TestStructFieldRestrictions(test *testing.T) {
+	schema, err := parseRDLString(`
+type Foo Struct {
+    String (pattern="y_*") bar (optional); //note that the type-specific options must be with the type
+    String (maxsize=20, minsize=5, x_foo="hey") blah;
+    String (values=["one","two","three"]) hmm;
+    Int32 (max=100) num
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with resource name: %v", err)
+	}
+	if len(schema.Types) != 5 {
+		test.Errorf("expected 5 types in schema, found %d", len(schema.Types))
+	}
+}
+
+func TestNestedTypes(test *testing.T) {
+	var err error
+	_, err = parseRDLString(`
+type Foo Struct {
+    Struct {
+        String name
+    } bar;
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with resource name: %v", err)
+	}
+	_, err = parseRDLString(`
+type Foo Struct {
+    Struct {
+        Struct {
+            String name
+        } foo;
+    } bar;
+}
+`)
+	_, err = ParseRDLFile("/Users/lee/test.rdl", false, false, true)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL with resource name: %v", err)
+	}
+
+}

@@ -33,6 +33,7 @@ type parser struct {
 	verbose        bool
 	pedantic       bool
 	nowarn         bool
+	gensym         int
 }
 
 func (p *parser) String() string {
@@ -397,6 +398,29 @@ func (p *parser) parseInclude() {
 			}
 			p.registerIncludedFile(path)
 		}
+	}
+}
+
+func (p *parser) addComment(t *Type, comment string) {
+	switch t.Variant {
+	case TypeVariantAliasTypeDef:
+		t.AliasTypeDef.Comment = comment
+	case TypeVariantStringTypeDef:
+		t.StringTypeDef.Comment = comment
+	case TypeVariantNumberTypeDef:
+		t.NumberTypeDef.Comment = comment
+	case TypeVariantArrayTypeDef:
+		t.ArrayTypeDef.Comment = comment
+	case TypeVariantMapTypeDef:
+		t.MapTypeDef.Comment = comment
+	case TypeVariantStructTypeDef:
+		t.StructTypeDef.Comment = comment
+	case TypeVariantBytesTypeDef:
+		t.BytesTypeDef.Comment = comment
+	case TypeVariantEnumTypeDef:
+		t.EnumTypeDef.Comment = comment
+	case TypeVariantUnionTypeDef:
+		t.UnionTypeDef.Comment = comment
 	}
 }
 
@@ -815,6 +839,10 @@ func (p *parser) resolvePattern(t *Type) (string, error) {
 
 func (p *parser) parseTypeRef(expected string) TypeRef {
 	sym := string(p.identifier(expected))
+	return p.finishParseTypeRef(sym)
+}
+
+func (p *parser) finishParseTypeRef(sym string) TypeRef {
 	if p.err == nil {
 		c := p.scanner.Peek()
 		if c == '.' {
@@ -849,36 +877,50 @@ func (p *parser) normalizeTypeName(typeName Identifier, supertypeName TypeRef) (
 }
 
 func (p *parser) parseType(comment string) *Type {
-	var t *Type
 	typeName := p.identifier("type name")
 	supertypeName := p.parseTypeRef("supertype name")
 	typeName, supertypeName = p.normalizeTypeName(typeName, supertypeName)
 	if p.err != nil {
 		return nil
 	}
+	c := p.skipWhitespaceExceptNewline()
+	if c == ';' || c == '/' || c == '\n' {
+		comment = p.statementEnd(comment)
+		return makeAliasType(TypeName(typeName), TypeRef(supertypeName), comment)
+	}
 	tmpType := p.makeForwardTypeRef(string(typeName))
 	p.registerType(tmpType) //so recursive references work. This will get replaced.
+	t := p.parseTypeSpec(typeName, supertypeName)
+	if t != nil {
+		comment = p.statementEnd(comment)
+		p.addComment(t, comment)
+	}
+	return t
+}
+
+func (p *parser) parseTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
+	var t *Type
 	if p.err == nil {
 		bt := p.baseTypeByName(supertypeName)
 		switch bt {
 		case BaseTypeStruct:
-			t = p.parseStructType(typeName, supertypeName, comment)
+			t = p.parseStructTypeSpec(typeName, supertypeName)
 		case BaseTypeArray:
-			t = p.parseArrayType(typeName, supertypeName, comment)
+			t = p.parseArrayTypeSpec(typeName, supertypeName)
 		case BaseTypeMap:
-			t = p.parseMapType(typeName, supertypeName, comment)
+			t = p.parseMapTypeSpec(typeName, supertypeName)
 		case BaseTypeString, BaseTypeUUID, BaseTypeSymbol, BaseTypeTimestamp:
-			t = p.parseStringType(typeName, supertypeName, comment, bt.String())
+			t = p.parseStringTypeSpec(typeName, supertypeName, bt.String())
 		case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
-			t = p.parseNumericType(typeName, supertypeName, comment)
+			t = p.parseNumericTypeSpec(typeName, supertypeName)
 		case BaseTypeUnion:
-			t = p.parseUnionType(typeName, supertypeName, comment)
+			t = p.parseUnionTypeSpec(typeName, supertypeName)
 		case BaseTypeEnum:
-			t = p.parseEnumType(typeName, supertypeName, comment)
+			t = p.parseEnumTypeSpec(typeName, supertypeName)
 		case BaseTypeBool, BaseTypeAny:
-			t = p.parseAliasType(typeName, supertypeName, comment)
+			t = p.parseAliasTypeSpec(typeName, supertypeName)
 		case BaseTypeBytes:
-			t = p.parseBytesType(typeName, supertypeName, comment)
+			t = p.parseBytesTypeSpec(typeName, supertypeName)
 		default:
 			fmt.Println("bt:", bt)
 			p.error("Cannot derive from this type: " + string(supertypeName))
@@ -1032,15 +1074,23 @@ func (p *parser) skipWhitespaceExceptNewline() rune {
 	return 0
 }
 
-func (p *parser) parseStringType(typeName Identifier, supertypeName TypeRef, comment string, base string) *Type {
-	if supertypeName != "String" {
-		comment = p.statementEnd(comment)
-		return makeAliasType(TypeName(typeName), supertypeName, comment)
-	}
+func (p *parser) parseStringTypeSpec(typeName Identifier, supertypeName TypeRef, base string) *Type {
+	/*	if supertypeName != "String" { //limitation: cannot specify subtype other string types to add options. Must descend directly from String
+			comment = p.statementEnd(comment)
+			return makeAliasType(TypeName(typeName), supertypeName, comment)
+		}
+	*/
 	t := NewStringTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
+
+	if nil == p.parseStringTypeDef(t, base) {
+		return p.findType("String")
+	}
+	return &Type{Variant: TypeVariantStringTypeDef, StringTypeDef: t}
+}
+
+func (p *parser) parseStringTypeDef(t *StringTypeDef, base string) *StringTypeDef {
 	p.skipWhitespaceExceptNewline()
 	if p.scanner.Peek() == '(' {
 		p.scanner.Next()
@@ -1109,8 +1159,10 @@ func (p *parser) parseStringType(typeName Identifier, supertypeName TypeRef, com
 		}
 	}
 	t.Comment = p.statementEnd(t.Comment)
-	t.Comment = p.statementEnd(t.Comment)
-	return &Type{Variant: TypeVariantStringTypeDef, StringTypeDef: t}
+	if t.MaxSize == nil && t.MinSize == nil && t.Pattern == "" && t.Values == nil {
+		return nil
+	}
+	return t
 }
 
 func (p *parser) parseStructOptions(typename string) map[ExtendedAnnotation]string {
@@ -1181,17 +1233,12 @@ func (p *parser) usedFieldNames(tref TypeRef) map[Identifier]bool {
 	return fieldNames
 }
 
-func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
-	c := p.skipWhitespaceExceptNewline()
-	if c == ';' || c == '/' {
-		comment = p.statementEnd(comment)
-		return makeAliasType(TypeName(typeName), TypeRef(supertypeName), comment)
-	}
+func (p *parser) parseStructTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewStructTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
 	isClosed := false
+	c := p.skipWhitespaceExceptNewline()
 	if c == '(' {
 		options := p.parseStructOptions("Struct")
 		if options != nil {
@@ -1203,11 +1250,18 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 		if len(options) > 0 {
 			t.Annotations = options
 		}
+		c = p.skipWhitespaceExceptNewline()
 	}
+	if c != '{' {
+		//use generic struct type with field defs
+		return p.findType(supertypeName)
+	}
+	p.scanner.Next()
 	fcomment := ""
-	p.expect("{")
 	var fields []*StructFieldDef
 	fieldNames := p.usedFieldNames(t.Type)
+
+	//now scan for fields
 	tok := p.scanner.Scan()
 	for tok != scanner.EOF {
 		if tok == '}' {
@@ -1215,6 +1269,7 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 		} else {
 			switch tok {
 			case '#':
+				fmt.Println("field legacy comment")
 				if p.pedantic {
 					p.error("legacy line comment character '#' not supported. Use '//'")
 					return nil
@@ -1228,7 +1283,7 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 				fcomment, _ = p.parseComment(tok, fcomment)
 				tok = p.scanner.Scan()
 			case scanner.Ident:
-				sym := p.scanner.TokenText()
+				sym := p.finishParseTypeRef(p.scanner.TokenText())
 				if sym == "closed" {
 					if !p.nowarn {
 						p.warning("use 'type " + string(t.Name) + " Struct (closed) { ... } syntax instead")
@@ -1237,24 +1292,13 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 					fcomment = p.statementEnd(fcomment)
 					tok = p.scanner.Scan()
 				} else {
-					c = p.scanner.Peek()
-					if c == '.' {
-						p.scanner.Next()
-						tok := p.scanner.Scan()
-						if tok == scanner.Ident {
-							sym = sym + "." + p.scanner.TokenText()
-						} else {
-							p.error("type reference must be a compound name")
-							return nil
-						}
-					}
 					ft := p.findType(TypeRef(sym))
 					if ft == nil {
-						p.error("No such type: " + sym)
+						p.error("No such type: " + string(sym))
 						return nil
 					}
-					fieldType, _, _ := TypeInfo(ft)
-					field := p.parseStructField(t, string(fieldType), fcomment)
+					fieldType, fieldSuperType, _ := TypeInfo(ft)
+					field := p.parseStructField(t, fieldType, fieldSuperType, fcomment)
 					fcomment = ""
 					if p.err != nil {
 						return nil
@@ -1278,17 +1322,128 @@ func (p *parser) parseStructType(typeName Identifier, supertypeName TypeRef, com
 		return nil
 	}
 	t.Closed = isClosed
-	t.Comment = p.trailingComment(t.Comment)
 	if len(fields) > 0 {
 		t.Fields = fields
 	}
 	return &Type{TypeVariantStructTypeDef, nil, t, nil, nil, nil, nil, nil, nil, nil, nil}
 }
 
-func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment string) *StructFieldDef {
+func isSimpleMapType(mt *MapTypeDef) bool {
+	return mt.Size == nil && mt.MinSize == nil && mt.MaxSize == nil && mt.Annotations == nil
+}
+
+func (p *parser) parseStructField(t *StructTypeDef, fieldType TypeName, fieldSuperType TypeRef, comment string) *StructFieldDef {
+	field := NewStructFieldDef()
+	//already parse the supertype name
+	embeddedTypeName := p.genTypeName(string(t.Name))
+	var ft *Type
+	switch fieldType {
+	case "Struct", "Map", "Array", "String", "Bytes", "Union", "Enum", "Int32", "Int64", "Int16", "Int8", "Float32", "Float64":
+		//xxx
+		ft = p.parseTypeSpec(Identifier(embeddedTypeName), fieldSuperType)
+	default:
+		ft = p.findType(TypeRef(fieldType))
+	}
+	if ft == nil {
+		return nil
+	}
+	fn, _, _ := TypeInfo(ft)
+	bt := p.baseType(ft)
+	if fn == TypeName(embeddedTypeName) {
+		//we generated it inline
+		p.registerType(ft)
+		fieldType = fn
+	} else {
+		switch ft.Variant {
+		case TypeVariantMapTypeDef:
+			field.Items = ft.MapTypeDef.Items
+			field.Keys = ft.MapTypeDef.Keys
+		case TypeVariantArrayTypeDef:
+			field.Items = ft.ArrayTypeDef.Items
+		}
+	}
+	field.Type = TypeRef(fieldType)
+	field.Name = p.identifier("field name")
+	p.skipWhitespaceExceptNewline()
+	optional := false
+	if p.scanner.Peek() == '(' {
+		p.scanner.Next()
+		tok := p.scanner.Scan()
+		commaExpected := false
+		for tok != ')' {
+			if commaExpected {
+				if tok != ',' {
+					p.expectedError("',' or ')'")
+					return nil
+				}
+				tok = p.scanner.Scan()
+			} else {
+				commaExpected = true
+			}
+			optname := ""
+			if tok != scanner.Ident {
+				p.expectedError("option name")
+				return nil
+			}
+			optname = p.scanner.TokenText()
+			switch strings.ToLower(optname) {
+			case "optional":
+				optional = true
+			case "default":
+				var val interface{}
+				p.expect("=")
+				switch bt {
+				case BaseTypeString:
+					val = p.stringLiteral("String literal")
+				case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
+					val = p.numericLiteral(fmt.Sprintf("%v literal", bt))
+				case BaseTypeBool:
+					s := p.identifier("'true' or 'false'")
+					val = "true" == s
+				case BaseTypeEnum:
+					s := p.identifier("enum symbol")
+					val = s
+				default:
+					p.error(fmt.Sprintf("cannot provide default value for a %v type", bt))
+					return nil
+				}
+				field.Default = val
+			default:
+				if strings.HasPrefix(optname, "x_") {
+					field.Annotations = p.parseExtendedOption(field.Annotations, ExtendedAnnotation(optname))
+				} else {
+					p.error("unsupported Struct field option: " + optname)
+					return nil
+				}
+			}
+			if p.err != nil {
+				return nil
+			}
+			tok = p.scanner.Scan()
+		}
+	}
+	field.Comment = p.statementEnd(comment)
+	if optional {
+		field.Optional = true
+	} else {
+		ft := p.findType(TypeRef(field.Type))
+		if ft != nil && p.isForwardTypeRef(ft) {
+			p.error(fmt.Sprintf("Recursively typed fields must be optional: field '%s' in struct %s", field.Name, t.Name))
+		}
+	}
+	return field
+}
+
+/*func (p *parser) xparseStructField(t *StructTypeDef, fieldType string, fieldSuperType string, comment string) *StructFieldDef {
+	var embeddedTypeName string
+	var embeddedType *Type
+	var embeddedAnnotations map[ExtendedAnnotation]string
 	field := NewStructFieldDef()
 	tok := p.scanner.Scan()
 	optional := false
+//replace with parseTypeSpec for all this
+	ft := p.findType(TypeRef(fieldType))
+	bt := p.baseType(ft)
 	if tok == '<' {
 		switch strings.ToLower(fieldType) {
 		case "array":
@@ -1341,6 +1496,24 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment st
 		fieldType = fieldType + "." + string(s)
 		tok = p.scanner.Scan()
 	}
+	if tok == '{' {
+		switch bt {
+		case BaseTypeStruct:
+			embeddedTypeName = p.genTypeName(string(t.Name))
+			embeddedType = p.parseStructTypeSpec(Identifier(embeddedTypeName), TypeRef(fieldSuperType))
+//			embeddedType = &Type{Variant: TypeVariantStructTypeDef, StructTypeDef: NewStructTypeDef()}
+//			embeddedType.StructTypeDef.Name = TypeName(embeddedTypeName)
+//			embeddedType.StructTypeDef.Type = TypeRef(fieldSuperType)
+//			embeddedAnnotations = make(map[ExtendedAnnotation]string)
+//			embeddedType.StructTypeDef.Annotations = embeddedAnnotations
+//			if nil ==
+//				return nil
+//			}
+			tok = p.scanner.Scan()
+		default:
+			fmt.Println("Unsupported structured inline type:", bt)
+		}
+	}
 	field.Type = TypeRef(fieldType)
 	if tok == scanner.Ident {
 		field.Name = Identifier(p.scanner.TokenText())
@@ -1370,8 +1543,6 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment st
 				case "default":
 					var val interface{}
 					p.expect("=")
-					ft := p.findType(TypeRef(fieldType))
-					bt := p.baseType(ft)
 					switch bt {
 					case BaseTypeString:
 						val = p.stringLiteral("String literal")
@@ -1392,8 +1563,48 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment st
 					if strings.HasPrefix(optname, "x_") {
 						field.Annotations = p.parseExtendedOption(field.Annotations, ExtendedAnnotation(optname))
 					} else {
-						p.error("unsupported Struct field option: " + optname)
-						return nil
+						switch bt {
+*/
+/*
+	case BaseTypeString:
+		if embeddedType == nil {
+			embeddedTypeName = p.genTypeName(string(t.Name))
+			embeddedType = &Type{Variant: TypeVariantStringTypeDef, StringTypeDef: NewStringTypeDef()}
+			embeddedType.StringTypeDef.Name = TypeName(embeddedTypeName)
+			embeddedType.StringTypeDef.Type = TypeRef(fieldSuperType)
+			embeddedAnnotations = make(map[ExtendedAnnotation]string)
+			embeddedType.StringTypeDef.Annotations = embeddedAnnotations
+		}
+		switch strings.ToLower(optname) {
+		case "maxsize":
+			p.expect("=")
+			n := p.int32Literal("integer value")
+			embeddedType.StringTypeDef.MaxSize = &n
+		case "minsize":
+			p.expect("=")
+			n := p.int32Literal("integer value")
+			embeddedType.StringTypeDef.MinSize = &n
+		case "pattern":
+			p.parseStringPatternOption(embeddedType.StringTypeDef)
+		case "values":
+			p.parseStringValuesOption(embeddedType.StringTypeDef)
+		default:
+			p.error("unsupported String field option: " + optname)
+			return nil
+		}
+	case BaseTypeBytes:
+		fmt.Println("field option for Bytes:", optname)
+	case BaseTypeSymbol:
+		fmt.Println("field option for Symbol:", optname)
+	case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
+		fmt.Println("field option for Number:", optname)
+	case BaseTypeStruct:
+		fmt.Println("field option for Struct:", optname)
+*/
+/*						default:
+							p.error("unsupported Struct field option: " + optname)
+							return nil
+						}
 					}
 				}
 				if p.err != nil {
@@ -1414,25 +1625,40 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType string, comment st
 			p.error(fmt.Sprintf("Recursively typed fields must be optional: field '%s' in struct %s", field.Name, t.Name))
 		}
 	}
+	if embeddedType != nil {
+		embeddedAnnotations["x_struct_field"] = string(t.Name) + "." + string(field.Name)
+		p.registerType(embeddedType)
+		field.Type = TypeRef(embeddedTypeName)
+	}
 	return field
 }
+*/
 
-func (p *parser) parseArrayType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
+func (p *parser) genTypeName(base string) string {
+	p.gensym++
+	return fmt.Sprintf("%s_T%d", base, p.gensym)
+}
+
+func (p *parser) parseArrayTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewArrayTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
-	tok := p.scanner.Scan()
+	tok := p.skipWhitespaceExceptNewline()
 	if tok == '<' {
+		tok = p.scanner.Scan()
 		itemsType := p.typeSpec()
 		if itemsType != nil {
 			ti, _, _ := TypeInfo(itemsType)
 			t.Items = TypeRef(ti)
 		}
 		p.expect(">")
-		tok = p.scanner.Scan()
+		if p.err != nil {
+			return nil
+		}
+		tok = p.skipWhitespaceExceptNewline()
 	}
 	if tok == '(' {
+		p.scanner.Next()
 		tok = p.scanner.Scan()
 		commaExpected := false
 		for tok != ')' {
@@ -1483,15 +1709,16 @@ func (p *parser) parseArrayType(typeName Identifier, supertypeName TypeRef, comm
 			tok = p.scanner.Scan()
 		}
 	}
-	t.Comment = p.statementEnd(t.Comment)
+	if t.Size == nil && t.MinSize == nil && t.MaxSize == nil && t.Annotations == nil {
+		t.Name = "Array"
+	}
 	return &Type{Variant: TypeVariantArrayTypeDef, ArrayTypeDef: t}
 }
 
-func (p *parser) parseBytesType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
+func (p *parser) parseBytesTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewBytesTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
 	tok := p.scanner.Scan()
 	if tok == '[' {
 		size := p.int32Literal("byte array size, non-negative integer")
@@ -1561,7 +1788,9 @@ func (p *parser) parseBytesType(typeName Identifier, supertypeName TypeRef, comm
 			tok = p.scanner.Scan()
 		}
 	}
-	t.Comment = p.statementEnd(t.Comment)
+	if t.Annotations == nil && t.Size == nil && t.MinSize == nil && t.MaxSize == nil {
+		return p.findType(supertypeName)
+	}
 	return &Type{Variant: TypeVariantBytesTypeDef, BytesTypeDef: t}
 }
 
@@ -1636,23 +1865,23 @@ func (p *parser) typeSpec() *Type {
 	return nil
 }
 
-func (p *parser) parseMapType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
+func (p *parser) parseMapTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewMapTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
-	tok := p.scanner.Scan()
+	tok := p.skipWhitespaceExceptNewline()
 	if tok == '<' {
+		tok = p.scanner.Scan()
 		tt := p.typeSpec()
 		if p.err != nil {
 			return nil
 		}
 		if tt == nil { //Any
-			p.error("Map key types must derive from String")
+			p.error("Map key types must derive from String or Symbol")
 			return nil
 		}
-		if p.baseType(tt) != BaseTypeString {
-			p.error("Map key types must derive from String")
+		if p.baseType(tt) != BaseTypeString && p.baseType(tt) != BaseTypeSymbol {
+			p.error("Map key types must derive from String or Symbol")
 			return nil
 		}
 		tk, _, _ := TypeInfo(tt)
@@ -1673,9 +1902,10 @@ func (p *parser) parseMapType(typeName Identifier, supertypeName TypeRef, commen
 		if p.err != nil {
 			return nil
 		}
-		tok = p.scanner.Scan()
+		tok = p.skipWhitespaceExceptNewline()
 	}
 	if tok == '(' {
+		p.scanner.Next()
 		tok = p.scanner.Scan()
 		commaExpected := false
 		for tok != ')' {
@@ -1726,22 +1956,16 @@ func (p *parser) parseMapType(typeName Identifier, supertypeName TypeRef, commen
 			tok = p.scanner.Scan()
 		}
 	}
-	t.Comment = p.statementEnd(t.Comment)
+	if t.Size == nil && t.MinSize == nil && t.MaxSize == nil && t.Annotations == nil {
+		t.Name = "Map"
+	}
 	return &Type{Variant: TypeVariantMapTypeDef, MapTypeDef: t}
 }
 
-func (p *parser) parseNumericType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
-	lsupertypeName := strings.ToLower(string(supertypeName))
-	switch lsupertypeName {
-	case "int32", "int64", "int16", "int8", "float64", "float32":
-	default:
-		comment = p.statementEnd(comment)
-		return makeAliasType(TypeName(typeName), TypeRef(lsupertypeName), comment)
-	}
+func (p *parser) parseNumericTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewNumberTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
 	c := p.skipWhitespaceExceptNewline()
 	if c == '(' {
 		p.scanner.Next()
@@ -1788,15 +2012,16 @@ func (p *parser) parseNumericType(typeName Identifier, supertypeName TypeRef, co
 			tok = p.scanner.Scan()
 		}
 	}
-	t.Comment = p.statementEnd(t.Comment)
+	if t.Max == nil && t.Min == nil && t.Annotations == nil {
+		return p.findType(supertypeName)
+	}
 	return &Type{Variant: TypeVariantNumberTypeDef, NumberTypeDef: t}
 }
 
-func (p *parser) parseAliasType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
+func (p *parser) parseAliasTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewAliasTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
 	c := p.skipWhitespaceExceptNewline()
 	if c == '(' {
 		p.scanner.Next()
@@ -1827,7 +2052,6 @@ func (p *parser) parseAliasType(typeName Identifier, supertypeName TypeRef, comm
 			tok = p.scanner.Scan()
 		}
 	}
-	t.Comment = p.statementEnd(t.Comment)
 	return &Type{Variant: TypeVariantAliasTypeDef, AliasTypeDef: t}
 }
 
@@ -1840,11 +2064,10 @@ func newNumber(n float64) *Number {
 	return &Number{NumberVariantFloat64, nil, nil, nil, nil, nil, &n}
 }
 
-func (p *parser) parseUnionType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
+func (p *parser) parseUnionTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewUnionTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
 	p.expect("<")
 	tok := p.scanner.Scan()
 	commaExpected := false
@@ -1879,24 +2102,18 @@ func (p *parser) parseUnionType(typeName Identifier, supertypeName TypeRef, comm
 			}
 		}
 	}
-	t.Comment = p.statementEnd(t.Comment)
 	return &Type{Variant: TypeVariantUnionTypeDef, UnionTypeDef: t}
 }
 
-func (p *parser) parseEnumType(typeName Identifier, supertypeName TypeRef, comment string) *Type {
+func (p *parser) parseEnumTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewEnumTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
-	t.Comment = comment
-	comment = ""
+	comment := ""
 	var tok rune
 	c := p.skipWhitespaceExceptNewline()
-	if c == ';' {
-		t.Comment = p.statementEnd(t.Comment)
-		return nil
-	}
 	if c == '(' {
-		options := p.parseStructOptions("Enum")
+		options := p.parseStructOptions("Enum") //all but 'closed' work
 		if options != nil {
 			if _, ok := options["closed"]; ok {
 				p.error("Unsupported Enum option: closed")
@@ -1907,19 +2124,25 @@ func (p *parser) parseEnumType(typeName Identifier, supertypeName TypeRef, comme
 			}
 		}
 	}
+	//	if c != '{' {
+	//		p.expectedError("'{'")
+	//		return nil
+	//	}
 	p.expect("{")
 	tok = p.scanner.Scan()
 	if tok == scanner.Comment {
 		t.Comment, _ = p.parseComment(tok, t.Comment)
 		tok = p.scanner.Scan()
 	}
-	for tok != '}' {
+	for tok != scanner.EOF {
+		if tok == '}' {
+			p.scanner.Next()
+			break
+		}
 		if tok == scanner.Comment {
 			comment, _ = p.parseComment(tok, comment)
-		} else if tok != scanner.Ident {
-			p.error("Enum type not terminated properly")
-			break
-		} else {
+			tok = p.scanner.Scan()
+		} else if tok == scanner.Ident {
 			symbol := p.scanner.TokenText()
 			p.skipWhitespace()
 			c := p.scanner.Peek()
@@ -1934,10 +2157,16 @@ func (p *parser) parseEnumType(typeName Identifier, supertypeName TypeRef, comme
 			el := EnumElementDef{Identifier(symbol), comment}
 			t.Elements = append(t.Elements, &el)
 			comment = ""
+			tok = p.scanner.Scan()
+		} else {
+			p.error("Enum type not terminated properly")
+			break
 		}
-		tok = p.scanner.Scan()
 	}
-	t.Comment = p.trailingComment(t.Comment)
+	if tok == scanner.EOF {
+		p.error("Unterminated enum definition")
+		return nil
+	}
 	return &Type{Variant: TypeVariantEnumTypeDef, EnumTypeDef: t}
 }
 
