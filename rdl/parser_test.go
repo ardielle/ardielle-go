@@ -360,9 +360,4 @@ type Foo Struct {
     } bar;
 }
 `)
-	_, err = ParseRDLFile("/Users/lee/test.rdl", false, false, true)
-	if err != nil {
-		test.Errorf("cannot parse valid RDL with resource name: %v", err)
-	}
-
 }
