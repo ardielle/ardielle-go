@@ -325,16 +325,20 @@ resource Any GET "/bar" (async, name    =  myBar, x_something   ) {
 func TestStructFieldRestrictions(test *testing.T) {
 	schema, err := parseRDLString(`
 type Foo Struct {
-    String (pattern="y_*") bar (optional); //note that the type-specific options must be with the type
-    String (maxsize=20, minsize=5, x_foo="hey") blah;
-    String (values=["one","two","three"]) hmm;
-    Int32 (max=100) num
+    String (pattern="y_*") bar2 (optional); //normal syntax, the options are onthe type
+    String bar (optional, pattern="y_*"); //alternate syntax: the options for the field are applied to type
+    String blah (maxsize=20, minsize=5, x_foo="hey");
+    String hmm (values=["one","two","three"])
+    UUID id (values=["901dfb52-39b5-11e7-adba-6c4008a30aa6"], optional)
+    Timestamp ts (values=["2017-05-15T21:30:10.742Z"], optional)
+    Symbol sym (values=["one","two"])
+    Int32 num (max=100,min=50)
 }
 `)
 	if err != nil {
 		test.Errorf("cannot parse valid RDL with resource name: %v", err)
 	}
-	if len(schema.Types) != 5 {
+	if len(schema.Types) != 9 {
 		test.Errorf("expected 5 types in schema, found %d", len(schema.Types))
 	}
 }

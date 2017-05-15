@@ -921,9 +921,6 @@ func (p *parser) parseTypeSpec(typeName Identifier, supertypeName TypeRef) *Type
 			t = p.parseAliasTypeSpec(typeName, supertypeName)
 		case BaseTypeBytes:
 			t = p.parseBytesTypeSpec(typeName, supertypeName)
-		default:
-			fmt.Println("bt:", bt)
-			p.error("Cannot derive from this type: " + string(supertypeName))
 		}
 	}
 	return t
@@ -1085,6 +1082,38 @@ func (p *parser) parseStringTypeSpec(typeName Identifier, supertypeName TypeRef,
 	return &Type{Variant: TypeVariantStringTypeDef, StringTypeDef: t}
 }
 
+func (p *parser) parseStringTypeOption(t *StringTypeDef, base string, optname string) bool {
+	switch strings.ToLower(optname) {
+	case "pattern":
+		if base == "String" {
+			p.parseStringPatternOption(t)
+			return true
+		}
+	case "values":
+		p.parseStringValuesOption(t)
+		return true
+	case "minsize":
+		if base == "String" {
+			p.expect("=")
+			if p.err == nil {
+				val := p.int32Literal("int32 literal")
+				t.MinSize = &val
+			}
+			return true
+		}
+	case "maxsize":
+		if base == "String" {
+			p.expect("=")
+			if p.err == nil {
+				val := p.int32Literal("int32 literal")
+				t.MaxSize = &val
+			}
+			return true
+		}
+	}
+	return false
+}
+
 func (p *parser) parseStringTypeDef(t *StringTypeDef, base string) *StringTypeDef {
 	p.skipWhitespaceExceptNewline()
 	if p.scanner.Peek() == '(' {
@@ -1107,39 +1136,7 @@ func (p *parser) parseStringTypeDef(t *StringTypeDef, base string) *StringTypeDe
 				return nil
 			}
 			optname = p.scanner.TokenText()
-			switch strings.ToLower(optname) {
-			case "pattern":
-				if base == "String" {
-					p.parseStringPatternOption(t)
-				} else {
-					p.error("Unsupported " + base + " option: " + optname)
-					return nil
-				}
-			case "values":
-				p.parseStringValuesOption(t)
-			case "minsize":
-				if base == "String" {
-					p.expect("=")
-					if p.err == nil {
-						val := p.int32Literal("int32 literal")
-						t.MinSize = &val
-					}
-				} else {
-					p.error("Unsupported " + base + " option: " + optname)
-					return nil
-				}
-			case "maxsize":
-				if base == "String" {
-					p.expect("=")
-					if p.err == nil {
-						val := p.int32Literal("int32 literal")
-						t.MaxSize = &val
-					}
-				} else {
-					p.error("Unsupported " + base + " option: " + optname)
-					return nil
-				}
-			default:
+			if !p.parseStringTypeOption(t, base, optname) {
 				if strings.HasPrefix(optname, "x_") {
 					t.Annotations = p.parseExtendedOption(t.Annotations, ExtendedAnnotation(optname))
 				} else {
@@ -1264,7 +1261,6 @@ func (p *parser) parseStructTypeSpec(typeName Identifier, supertypeName TypeRef)
 		} else {
 			switch tok {
 			case '#':
-				fmt.Println("field legacy comment")
 				if p.pedantic {
 					p.error("legacy line comment character '#' not supported. Use '//'")
 					return nil
@@ -1405,8 +1401,44 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType TypeName, fieldSup
 				if strings.HasPrefix(optname, "x_") {
 					field.Annotations = p.parseExtendedOption(field.Annotations, ExtendedAnnotation(optname))
 				} else {
-					p.error("unsupported Struct field option: " + optname)
-					return nil
+					typeSpecific := false
+					switch bt {
+					case BaseTypeString, BaseTypeUUID, BaseTypeTimestamp, BaseTypeSymbol:
+						if fn != TypeName(embeddedTypeName) {
+							st := NewStringTypeDef()
+							st.Name = TypeName(embeddedTypeName)
+							st.Type = TypeRef(fn)
+							ft = &Type{Variant: TypeVariantStringTypeDef, StringTypeDef: st}
+							typeSpecific = p.parseStringTypeOption(st, bt.String(), optname)
+							if typeSpecific {
+								p.registerType(ft)
+								field.Type = TypeRef(st.Name)
+								fn = TypeName(embeddedTypeName)
+							}
+						} else {
+							typeSpecific = p.parseStringTypeOption(ft.StringTypeDef, bt.String(), optname)
+						}
+					case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
+						if fn != TypeName(embeddedTypeName) {
+							nt := NewNumberTypeDef()
+							nt.Name = TypeName(embeddedTypeName)
+							nt.Type = TypeRef(fn)
+							ft = &Type{Variant: TypeVariantNumberTypeDef, NumberTypeDef: nt}
+							typeSpecific = p.parseNumericTypeOption(nt, optname)
+							if typeSpecific {
+								p.registerType(ft)
+								field.Type = TypeRef(nt.Name)
+								fn = TypeName(embeddedTypeName)
+							}
+						} else {
+							typeSpecific = p.parseNumericTypeOption(ft.NumberTypeDef, optname)
+						}
+					case BaseTypeBool, BaseTypeEnum:
+					}
+					if !typeSpecific {
+						p.error(fmt.Sprintf("unsupported Struct field option for type %v: %s", bt, optname))
+						return nil
+					}
 				}
 			}
 			if p.err != nil {
@@ -1755,6 +1787,24 @@ func (p *parser) parseMapTypeSpec(typeName Identifier, supertypeName TypeRef) *T
 	return &Type{Variant: TypeVariantMapTypeDef, MapTypeDef: t}
 }
 
+func (p *parser) parseNumericTypeOption(t *NumberTypeDef, optname string) bool {
+	switch optname {
+	case "min":
+		p.expect("=")
+		if p.err == nil {
+			t.Min = newNumber(p.numericLiteral("numeric literal"))
+			return true
+		}
+	case "max":
+		p.expect("=")
+		if p.err == nil {
+			t.Max = newNumber(p.numericLiteral("numeric literal"))
+			return true
+		}
+	}
+	return false
+}
+
 func (p *parser) parseNumericTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
 	t := NewNumberTypeDef()
 	t.Name = TypeName(typeName)
@@ -1780,23 +1830,11 @@ func (p *parser) parseNumericTypeSpec(typeName Identifier, supertypeName TypeRef
 				return nil
 			}
 			optname = p.scanner.TokenText()
-			switch optname {
-			case "min":
-				p.expect("=")
-				if p.err == nil {
-					t.Min = newNumber(p.numericLiteral("numeric literal"))
-				}
-			case "max":
-				p.expect("=")
-				if p.err == nil {
-					t.Max = newNumber(p.numericLiteral("numeric literal"))
-				}
-			default:
+			if !p.parseNumericTypeOption(t, optname) {
 				if strings.HasPrefix(optname, "x_") {
 					t.Annotations = p.parseExtendedOption(t.Annotations, ExtendedAnnotation(optname))
 				} else {
 					p.error("Unsupported Number option: '" + optname + "'")
-					return nil
 				}
 			}
 			if p.err != nil {
