@@ -299,6 +299,8 @@ func StatusMessage(sym string) string {
 		return "Requested Range Not Satisfiable"
 	case "EXPECTATION_FAILED", "417":
 		return "Expectation Failed"
+	case "UNPROCESSABLE_ENTITY", "422":
+		return "Unprocessable Entity"
 	case "INTERNAL_SERVER_ERROR", "500":
 		return "Internal Server Error"
 	case "NOT_IMPLEMENTED", "501":
@@ -385,6 +387,8 @@ func StatusCode(sym string) string {
 		return "416"
 	case "EXPECTATION_FAILED", "417":
 		return "417"
+	case "UNPROCESSABLE_ENTITY", "422":
+		return "422"
 	case "INTERNAL_SERVER_ERROR", "500":
 		return "500"
 	case "NOT_IMPLEMENTED", "501":
