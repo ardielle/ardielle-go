@@ -46,6 +46,13 @@ func assertStringEquals(test *testing.T, msg string, expected string, val string
 	return true
 }
 
+func TestMapDefinition(t *testing.T) {
+	schema := loadTestSchema(t, "maptest.rdl")
+	if schema == nil {
+		return
+	}
+}
+
 func TestBasicTypes(test *testing.T) {
 	schema := loadTestSchema(test, "basictypes.rdl")
 	if schema == nil {

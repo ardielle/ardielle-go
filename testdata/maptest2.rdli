@@ -1,0 +1,2 @@
+type IdKey String (values=["id"]);
+type AttachedVolume Map<IdKey,String>;

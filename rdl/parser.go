@@ -481,6 +481,8 @@ func (p *parser) addTypeAnnotation(t *Type, key ExtendedAnnotation, value string
 			t.UnionTypeDef.Annotations = make(map[ExtendedAnnotation]string)
 		}
 		anno = t.UnionTypeDef.Annotations
+	case TypeVariantBaseType:
+		return
 	}
 	if !p.hasAnnotation(anno, key) {
 		anno[key] = value
