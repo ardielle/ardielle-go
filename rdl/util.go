@@ -301,6 +301,12 @@ func StatusMessage(sym string) string {
 		return "Expectation Failed"
 	case "UNPROCESSABLE_ENTITY", "422":
 		return "Unprocessable Entity"
+	case "PRECONDITION_REQUIRED", "428":
+		return "Precondition Required"
+	case "TOO_MANY_REQUESTS", "429":
+		return "Too Many Requests"
+	case "REQUEST_HEADER_FIELDS_TOO_LARGE", "431":
+		return "Request Header Fields Too Large"
 	case "INTERNAL_SERVER_ERROR", "500":
 		return "Internal Server Error"
 	case "NOT_IMPLEMENTED", "501":
@@ -313,6 +319,8 @@ func StatusMessage(sym string) string {
 		return "Gateway Timeout"
 	case "HTTP_VERSION_NOT_SUPPORTED", "505":
 		return "HTTP Version Not Supported"
+	case "NETWORK_AUTHENTICATION_REQUIRED", "511":
+		return "Network Authentication Required"
 	default:
 		return sym
 	}
@@ -389,6 +397,12 @@ func StatusCode(sym string) string {
 		return "417"
 	case "UNPROCESSABLE_ENTITY", "422":
 		return "422"
+	case "PRECONDITION_REQUIRED", "428":
+		return "428"
+	case "TOO_MANY_REQUESTS", "429":
+		return "429"
+	case "REQUEST_HEADER_FIELDS_TOO_LARGE", "431":
+		return "431"
 	case "INTERNAL_SERVER_ERROR", "500":
 		return "500"
 	case "NOT_IMPLEMENTED", "501":
@@ -401,6 +415,8 @@ func StatusCode(sym string) string {
 		return "504"
 	case "HTTP_VERSION_NOT_SUPPORTED", "505":
 		return "505"
+	case "NETWORK_AUTHENTICATION_REQUIRED", "511":
+		return "511"
 	default:
 		return sym
 	}
