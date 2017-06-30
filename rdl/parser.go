@@ -892,7 +892,7 @@ func (p *parser) parseType(comment string) *Type {
 	}
 	tmpType := p.makeForwardTypeRef(string(typeName))
 	p.registerType(tmpType) //so recursive references work. This will get replaced.
-	t := p.parseTypeSpec(typeName, supertypeName)
+	t := p.parseTypeSpec(typeName, supertypeName, false)
 	if t != nil {
 		comment = p.statementEnd(comment)
 		p.addComment(t, comment)
@@ -900,7 +900,7 @@ func (p *parser) parseType(comment string) *Type {
 	return t
 }
 
-func (p *parser) parseTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
+func (p *parser) parseTypeSpec(typeName Identifier, supertypeName TypeRef, inStruct bool) *Type {
 	var t *Type
 	if p.err == nil {
 		bt := p.baseTypeByName(supertypeName)
@@ -908,9 +908,9 @@ func (p *parser) parseTypeSpec(typeName Identifier, supertypeName TypeRef) *Type
 		case BaseTypeStruct:
 			t = p.parseStructTypeSpec(typeName, supertypeName)
 		case BaseTypeArray:
-			t = p.parseArrayTypeSpec(typeName, supertypeName)
+			t = p.parseArrayTypeSpec(typeName, supertypeName, inStruct)
 		case BaseTypeMap:
-			t = p.parseMapTypeSpec(typeName, supertypeName)
+			t = p.parseMapTypeSpec(typeName, supertypeName, inStruct)
 		case BaseTypeString, BaseTypeUUID, BaseTypeSymbol, BaseTypeTimestamp:
 			t = p.parseStringTypeSpec(typeName, supertypeName, bt.String())
 		case BaseTypeInt8, BaseTypeInt16, BaseTypeInt32, BaseTypeInt64, BaseTypeFloat32, BaseTypeFloat64:
@@ -1331,7 +1331,7 @@ func (p *parser) parseStructField(t *StructTypeDef, fieldType TypeName, fieldSup
 	var ft *Type
 	switch fieldType {
 	case "Struct", "Map", "Array", "String", "Bytes", "Union", "Enum", "Int32", "Int64", "Int16", "Int8", "Float32", "Float64":
-		ft = p.parseTypeSpec(Identifier(embeddedTypeName), fieldSuperType)
+		ft = p.parseTypeSpec(Identifier(embeddedTypeName), fieldSuperType, true)
 	default:
 		ft = p.findType(TypeRef(fieldType))
 	}
@@ -1466,7 +1466,7 @@ func (p *parser) genTypeName(base string) string {
 	return fmt.Sprintf("%s_T%d", base, p.gensym)
 }
 
-func (p *parser) parseArrayTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
+func (p *parser) parseArrayTypeSpec(typeName Identifier, supertypeName TypeRef, inStruct bool) *Type {
 	t := NewArrayTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
@@ -1536,7 +1536,7 @@ func (p *parser) parseArrayTypeSpec(typeName Identifier, supertypeName TypeRef) 
 			tok = p.scanner.Scan()
 		}
 	}
-	if t.Size == nil && t.MinSize == nil && t.MaxSize == nil && t.Annotations == nil {
+	if inStruct && t.Size == nil && t.MinSize == nil && t.MaxSize == nil && t.Annotations == nil {
 		t.Name = "Array"
 	}
 	return &Type{Variant: TypeVariantArrayTypeDef, ArrayTypeDef: t}
@@ -1692,7 +1692,7 @@ func (p *parser) typeSpec() *Type {
 	return nil
 }
 
-func (p *parser) parseMapTypeSpec(typeName Identifier, supertypeName TypeRef) *Type {
+func (p *parser) parseMapTypeSpec(typeName Identifier, supertypeName TypeRef, inStruct bool) *Type {
 	t := NewMapTypeDef()
 	t.Name = TypeName(typeName)
 	t.Type = TypeRef(supertypeName)
@@ -1783,7 +1783,7 @@ func (p *parser) parseMapTypeSpec(typeName Identifier, supertypeName TypeRef) *T
 			tok = p.scanner.Scan()
 		}
 	}
-	if t.Size == nil && t.MinSize == nil && t.MaxSize == nil && t.Annotations == nil {
+	if inStruct && t.Size == nil && t.MinSize == nil && t.MaxSize == nil && t.Annotations == nil {
 		t.Name = "Map"
 	}
 	return &Type{Variant: TypeVariantMapTypeDef, MapTypeDef: t}

@@ -51,6 +51,13 @@ func TestMapDefinition(t *testing.T) {
 	if schema == nil {
 		return
 	}
+	reg := NewTypeRegistry(schema)
+	ty := reg.FindType("AttachedVolume")
+	switch ty.Variant {
+	case TypeVariantMapTypeDef:
+	default:
+		t.Errorf("parsed Map type was inlined when it should not have been")
+	}
 }
 
 func TestBasicTypes(test *testing.T) {
