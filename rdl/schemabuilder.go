@@ -137,6 +137,45 @@ func (sb *SchemaBuilder) find(ordered []*Type, name string) *Type {
 	return nil
 }
 
+type BytesTypeBuilder struct {
+	bt BytesTypeDef
+}
+
+func NewBytesTypeBuilder(name string) *BytesTypeBuilder {
+	tb := new(BytesTypeBuilder)
+	tb.bt = BytesTypeDef{Type: "Bytes", Name: TypeName(name)}
+	return tb
+}
+
+func (tb *BytesTypeBuilder) Comment(comment string) *BytesTypeBuilder {
+	tb.bt.Comment = comment
+	return tb
+}
+
+func (tb *BytesTypeBuilder) MaxSize(maxsize int32) *BytesTypeBuilder {
+	tb.bt.MaxSize = &maxsize
+	return tb
+}
+
+func (tb *BytesTypeBuilder) MinSize(minsize int32) *BytesTypeBuilder {
+	tb.bt.MinSize = &minsize
+	return tb
+}
+
+func (tb *BytesTypeBuilder) Build() *Type {
+	t := new(Type)
+	if tb.bt.MaxSize == nil && tb.bt.MinSize == nil {
+		t.Variant = TypeVariantAliasTypeDef
+		t.AliasTypeDef = &AliasTypeDef{Type: tb.bt.Type, Name: tb.bt.Name, Comment: tb.bt.Comment}
+		//annotations
+	} else {
+		t.Variant = TypeVariantBytesTypeDef
+		t.BytesTypeDef = &tb.bt
+		//annotations
+	}
+	return t
+}
+
 type StringTypeBuilder struct {
 	st StringTypeDef
 }
