@@ -199,39 +199,75 @@ func (checker *validator) validate(t *Type, data interface{}, context string) Va
 	return checker.typeMismatchVariant(context, data, t)
 }
 
-func (checker *validator) validateString(t *Type, data string, context string) Validation {
+func (checker *validator) flattenStringConstraints(t *Type, name TypeName, pattern string, values []string, min, max *int32) (TypeName, string, []string, *int32, *int32) {
+	var super TypeRef
 	switch t.Variant {
 	case TypeVariantStringTypeDef:
 		typedef := t.StringTypeDef
-		if typedef.Values != nil {
-			match := false
-			for _, v := range typedef.Values {
-				if v == data {
-					match = true
-					break
-				}
-			}
-			if !match {
-				return checker.bad(context, "Value mismatch in String type", data, typedef.Name)
-			}
+		if name == "" {
+			name = typedef.Name
 		}
-		if typedef.Pattern != "" {
-			pattern := "^" + typedef.Pattern + "$"
-			matcher, err := regexp.Compile(pattern)
-			if err != nil {
-				return checker.bad(context, "Bad pattern in String type definition /"+pattern+"/", data, typedef.Name)
-			}
-			if !matcher.MatchString(data) {
-				return checker.bad(context, "Pattern mismatch in String type /"+pattern+"/", data, typedef.Name)
-			}
+		if pattern == "" && typedef.Pattern != "" {
+			pattern = typedef.Pattern
 		}
+		if values == nil && typedef.Values != nil {
+			values = typedef.Values
+		}
+		if min == nil && typedef.MinSize != nil {
+			min = typedef.MinSize
+		}
+		if max == nil && typedef.MaxSize != nil {
+			max = typedef.MaxSize
+		}
+		super = typedef.Type
 	case TypeVariantAliasTypeDef:
-		//nothing to check
+		super = t.AliasTypeDef.Type
+		if name == "" {
+			name = t.AliasTypeDef.Name
+		}
 	case TypeVariantBaseType:
-		//nothing to check
-	default:
-		tName, _, _ := TypeInfo(t)
-		return checker.bad(context, "Bad variant", data, tName)
+		if name == "" {
+			name = "String"
+		}
+		return name, pattern, values, min, max
+	}
+	st := checker.registry.FindType(super)
+	return checker.flattenStringConstraints(st, name, pattern, values, min, max)
+}
+
+func (checker *validator) validateString(t *Type, data string, context string) Validation {
+	name, pattern, values, min, max := checker.flattenStringConstraints(t, "", "", nil, nil, nil)
+	if min != nil {
+		if len(data) < int(*min) {
+			return checker.bad(context, "String too small", data, name)
+		}
+	}
+	if max != nil {
+		if len(data) > int(*max) {
+			return checker.bad(context, "String too large", data, name)
+		}
+	}
+	if values != nil {
+		match := false
+		for _, v := range values {
+			if v == data {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return checker.bad(context, "Value mismatch in String type", data, name)
+		}
+	}
+	if pattern != "" {
+		pat := "^" + pattern + "$"
+		matcher, err := regexp.Compile(pat)
+		if err != nil {
+			return checker.bad(context, "Bad pattern in String type definition /"+pat+"/", data, name)
+		}
+		if !matcher.MatchString(data) {
+			return checker.bad(context, "Pattern mismatch in String type /"+pat+"/", data, name)
+		}
 	}
 	return checker.good(t, data)
 }
