@@ -153,6 +153,7 @@ type StructTypeDef TypeDef {
 type EnumElementDef Struct {
      Identifier symbol; // The identifier representing the value
      String comment (optional); //the comment for the element
+     Map<ExtendedAnnotation,String> annotations (optional); //additional annotations starting with "x_"
 }
 
 //
