@@ -479,3 +479,22 @@ type TestEnum Enum {
 		test.Errorf("Enum type parsed incorrectly: %v", s1)
 	}
 }
+
+func TestStringSubtype(test *testing.T) {
+	schema, err := parseRDLString(`
+type Foo String (pattern="[a-z]*")
+type Bar Foo (maxSize=4);
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+		return
+	}
+	validation := Validate(schema, "Bar", "1")
+	if validation.Error == "" {
+		test.Errorf("validation error with string subclass value: %v", validation)
+	}
+	validation = Validate(schema, "Bar", "abcdef")
+	if validation.Error == "" {
+		test.Errorf("Validation error with string subclass value: %v", validation)
+	}
+}
