@@ -97,3 +97,22 @@ func TestValidatorCustomTypes(test *testing.T) {
 	}
 
 }
+
+func TestValidateStringSubtype(test *testing.T) {
+	schema, err := parseRDLString(`
+type Foo String (pattern="[a-z]*")
+type Bar Foo (maxSize=4);
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+		return
+	}
+	validation := Validate(schema, "Bar", "1")
+	if validation.Error == "" {
+		test.Errorf("validation error did not occur, string has non-alpha characters: %v\nschema is: %v", validation, schema)
+	}
+	validation = Validate(schema, "Bar", "abcdef")
+	if validation.Error == "" {
+		test.Errorf("Validation error did not occur, string is too long: %v\nschema is: %v", validation, schema)
+	}
+}
