@@ -232,6 +232,7 @@ func init() {
 	tSchema.ArrayField("types", "Type", true, "The types this schema defines.")
 	tSchema.ArrayField("resources", "Resource", true, "The resources for a service this schema defines")
 	tSchema.Field("base", "String", true, nil, "the base path for resources in the schema.")
+	tSchema.MapField("annotations", "ExtendedAnnotation", "String", true, "additional annotations starting with \"x_\"")
 	sb.AddType(tSchema.Build())
 
 	schema = sb.Build()
