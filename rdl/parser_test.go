@@ -379,3 +379,79 @@ type Foo Struct {
 }
 `)
 }
+
+func TestEnumComments(test *testing.T) {
+	var err error
+	egood, err := parseRDLString(`
+// Comment for TestEnum
+type TestEnum enum {
+    ONE, // Comment for ONE
+    TWO // Comment for TWO
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+	}
+	ebad, err := parseRDLString(`
+// Comment for TestEnum
+type TestEnum enum {
+
+    // Comment for ONE
+    ONE,
+
+    // Comment for TWO
+    TWO
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+	}
+	type1 := egood.Types[0] //.EnumTypeDef.Elements[0]
+	type2 := ebad.Types[0]  //.EnumTypeDef.Elements[0]
+	if !EquivalentTypes(type1, type2) {
+		test.Errorf("Types don't match: %v, %v", type1, type2)
+	}
+}
+
+func TestFieldComments(test *testing.T) {
+	var err error
+	t1, err := parseRDLString(`
+//type comment
+type TestStruct Struct {
+    String one; //comment for field 1
+    String two; //comment for field 2
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+	}
+	t2, err := parseRDLString(`
+//type comment
+type TestStruct Struct {
+
+    //comment for field 1
+    String one;
+
+    //comment for field 2
+    String two;
+}
+`)
+	type1 := t1.Types[0]
+	type2 := t2.Types[0]
+	if !EquivalentTypes(type1, type2) {
+		test.Errorf("Types don't match: %v, %v", type1, type2)
+	}
+}
+
+func EquivalentTypes(t1, t2 *Type) bool {
+	//cheesy
+	b1, err := json.Marshal(t1)
+	if err != nil {
+		return false
+	}
+	b2, err := json.Marshal(t2)
+	if err != nil {
+		return false
+	}
+	return string(b1) == string(b2)
+}
