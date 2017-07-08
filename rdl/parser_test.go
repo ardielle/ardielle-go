@@ -379,3 +379,4 @@ type Foo Struct {
 }
 `)
 }
+}

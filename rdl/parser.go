@@ -1959,10 +1959,6 @@ func (p *parser) parseEnumTypeSpec(typeName Identifier, supertypeName TypeRef) *
 	}
 	p.expect("{")
 	tok = p.scanner.Scan()
-	if tok == scanner.Comment {
-		t.Comment, _ = p.parseComment(tok, t.Comment)
-		tok = p.scanner.Scan()
-	}
 	for tok != scanner.EOF {
 		if tok == '}' {
 			p.scanner.Next()
@@ -1974,14 +1970,15 @@ func (p *parser) parseEnumTypeSpec(typeName Identifier, supertypeName TypeRef) *
 		} else if tok == scanner.Ident {
 			symbol := p.scanner.TokenText()
 			p.skipWhitespace()
-			c := p.scanner.Peek()
-			if c == ',' {
-				p.scanner.Next()
-				p.skipWhitespace()
-				c = p.scanner.Peek()
-			}
+			c = p.scanner.Peek()
 			if c == '/' {
 				comment = p.trailingComment(comment)
+			} else if c == ',' {
+				p.scanner.Next()
+				c := p.skipWhitespaceExceptNewline()
+				if c == '/' {
+					comment = p.trailingComment(comment)
+				}
 			}
 			el := EnumElementDef{Identifier(symbol), comment}
 			t.Elements = append(t.Elements, &el)
