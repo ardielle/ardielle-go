@@ -2053,6 +2053,11 @@ type Schema struct {
 	// the base path for resources in the schema.
 	//
 	Base string `json:"base,omitempty" rdl:"optional"`
+
+	//
+	// additional annotations starting with "x_"
+	//
+	Annotations map[ExtendedAnnotation]string `json:"annotations,omitempty" rdl:"optional"`
 }
 
 //

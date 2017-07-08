@@ -257,4 +257,5 @@ type Schema Struct {
     Array<Type> types (optional); // The types this schema defines.
     Array<Resource> resources (optional); // The resources for a service this schema defines
     String base (optional); //the base path for resources in the schema.
+    Map<ExtendedAnnotation,String> annotations (optional); //additional annotations starting with "x_"
 }

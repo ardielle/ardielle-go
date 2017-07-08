@@ -479,3 +479,23 @@ type TestEnum Enum {
 		test.Errorf("Enum type parsed incorrectly: %v", s1)
 	}
 }
+
+func TestSchemaAnnotations(test *testing.T) {
+	var err error
+	s1, err := parseRDLString(`
+//this is a schema annotation test
+name foo;
+version 1
+x_something="23"
+x_blah = "blah"
+
+type Foo Struct {
+    String text
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+		return
+	}
+	fmt.Println("schema:", s1)
+}

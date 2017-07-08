@@ -224,7 +224,11 @@ func (p *parser) parseSchema() {
 					p.registerResource(r)
 				}
 			default:
-				p.error("Unrecognized keyword in schema: '" + txt + "'")
+				if strings.HasPrefix(txt, "x_") {
+					p.schema.Annotations = p.parseExtendedOption(p.schema.Annotations, ExtendedAnnotation(txt))
+				} else {
+					p.error("Unrecognized keyword in schema: '" + txt + "'")
+				}
 			}
 		case ';':
 			p.warning("stray ';' character")
