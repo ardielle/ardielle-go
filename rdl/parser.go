@@ -1959,6 +1959,7 @@ func (p *parser) parseEnumTypeSpec(typeName Identifier, supertypeName TypeRef) *
 	}
 	p.expect("{")
 	tok = p.scanner.Scan()
+	var annos map[ExtendedAnnotation]string
 	for tok != scanner.EOF {
 		if tok == '}' {
 			p.scanner.Next()
@@ -1971,6 +1972,39 @@ func (p *parser) parseEnumTypeSpec(typeName Identifier, supertypeName TypeRef) *
 			symbol := p.scanner.TokenText()
 			p.skipWhitespace()
 			c = p.scanner.Peek()
+			if c == '(' {
+				p.scanner.Next()
+				tok := p.scanner.Scan()
+				commaExpected := false
+				for tok != ')' {
+					if commaExpected {
+						if tok != ',' {
+							p.expectedError("',' or ')'")
+							return nil
+						}
+						tok = p.scanner.Scan()
+					} else {
+						commaExpected = true
+					}
+					optname := ""
+					if tok != scanner.Ident {
+						p.expectedError("option name")
+						return nil
+					}
+					optname = p.scanner.TokenText()
+					if strings.HasPrefix(optname, "x_") {
+						annos = p.parseExtendedOption(annos, ExtendedAnnotation(optname))
+					} else {
+						p.error("Unsupported enum element option: " + optname)
+						return nil
+					}
+					if p.err != nil {
+						return nil
+					}
+					tok = p.scanner.Scan()
+				}
+				c = p.skipWhitespaceExceptNewline()
+			}
 			if c == '/' {
 				comment = p.trailingComment(comment)
 			} else if c == ',' {
@@ -1980,8 +2014,9 @@ func (p *parser) parseEnumTypeSpec(typeName Identifier, supertypeName TypeRef) *
 					comment = p.trailingComment(comment)
 				}
 			}
-			el := EnumElementDef{Identifier(symbol), comment}
+			el := EnumElementDef{Identifier(symbol), comment, annos}
 			t.Elements = append(t.Elements, &el)
+			annos = nil
 			comment = ""
 			tok = p.scanner.Scan()
 		} else {

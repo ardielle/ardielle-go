@@ -455,3 +455,27 @@ func EquivalentTypes(t1, t2 *Type) bool {
 	}
 	return string(b1) == string(b2)
 }
+
+func TestEnumElementComments(test *testing.T) {
+	var err error
+	s1, err := parseRDLString(`
+//type comment
+type TestEnum Enum {
+    ONE (x_index="1"),
+    TWO (x_index="2"), //comment for TWO
+    THREE, //comment for THREE
+    FOUR (x_index="4") //comment for FOUR
+}
+`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+		return
+	}
+	if s1.Types[0].EnumTypeDef.Name != "TestEnum" || len(s1.Types[0].EnumTypeDef.Elements) != 4 {
+		test.Errorf("Enum type parsed incorrectly: %v", s1)
+	}
+	e := s1.Types[0].EnumTypeDef.Elements
+	if e[0].Annotations["x_index"] != "1" || e[1].Annotations["x_index"] != "2" || e[3].Annotations["x_index"] != "4" {
+		test.Errorf("Enum type parsed incorrectly: %v", s1)
+	}
+}
