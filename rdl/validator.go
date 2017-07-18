@@ -138,7 +138,7 @@ func (checker *validator) validate(t *Type, data interface{}, context string) Va
 	case BaseTypeUnion:
 		return checker.validateUnion(t.UnionTypeDef, data, context)
 	case BaseTypeString:
-		return checker.validateString(t, fmt.Sprint(data), context)
+		return checker.validateString(t, data, context)
 	}
 	switch d := data.(type) {
 	case bool:
@@ -235,8 +235,15 @@ func (checker *validator) flattenStringConstraints(t *Type, name TypeName, patte
 	return checker.flattenStringConstraints(st, name, pattern, values, min, max)
 }
 
-func (checker *validator) validateString(t *Type, data string, context string) Validation {
+func (checker *validator) validateString(t *Type, rawdata interface{}, context string) Validation {
 	name, pattern, values, min, max := checker.flattenStringConstraints(t, "", "", nil, nil, nil)
+	var data string
+	switch v := rawdata.(type) {
+	case string:
+		data = v
+	default:
+		return checker.bad(context, "Not a string", rawdata, name)
+	}
 	if min != nil {
 		if len(data) < int(*min) {
 			return checker.bad(context, "String too small", data, name)

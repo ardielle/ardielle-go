@@ -72,7 +72,6 @@ func TestValidatorCustomTypes(test *testing.T) {
 		{"string", "basic string"},
 		{"mytimestamp", "2017-04-20T15:04:05.999Z"},
 		{"foo", &foo{}},
-		{"string", &foo{}}, // This works because any type can be converted to a string
 	}
 
 	for _, t := range positive {
@@ -87,6 +86,7 @@ func TestValidatorCustomTypes(test *testing.T) {
 	}{
 		{"mytimestamp", "20170420T15:04:05.999Z"},
 		{"foo", 4587},
+		{"string", &foo{}},
 	}
 
 	for _, t := range negative {
