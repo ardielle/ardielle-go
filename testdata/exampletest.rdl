@@ -1,0 +1,26 @@
+type mylegacystring String (maxsize=4, x_example="foo");
+type mystring String (maxsize=4, x_example="\"foo\""); //
+type badstring String (maxsize=4, x_example="\"foobar\"",x_expectfail="true");
+
+type titlestring String (maxsize=12)
+
+type mystruct Struct (x_example="{\"title\":\"Hello There\"}") {
+     titlestring title (x_example="\"This is too long for the type\"", x_expectfail="true")
+     Int32 foo (optional, x_example="23")
+}
+
+type badstruct Struct (x_example="{\"title\":23}",x_expectfail="true") {
+     String title
+}
+
+type morestruct Struct (x_example="{\"title\":\"x\",\"foo\":23,\"s\":{\"title\":\"x\"}}") {
+     String title
+     Int32 foo
+     mystruct s
+}
+
+type morebadstruct Struct (x_example="{\"title\":\"x\",\"foo\":23,\"s\":{\"titlex\":\"x\"}}",x_expectfail="true") {
+     String title
+     Int32 foo
+     mystruct s
+}
