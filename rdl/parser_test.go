@@ -497,3 +497,15 @@ type Foo Struct {
 		return
 	}
 }
+
+func TestAliasAnnotation(test *testing.T) {
+	_, err := parseRDLString(`
+	   type DateTime string (x_date_time)
+	   type Response struct {
+	     DateTime dateTime (optional);
+	   }`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+		return
+	}
+}

@@ -1157,7 +1157,7 @@ func (p *parser) parseStringTypeDef(t *StringTypeDef, base string) *StringTypeDe
 		}
 	}
 	t.Comment = p.statementEnd(t.Comment)
-	if t.MaxSize == nil && t.MinSize == nil && t.Pattern == "" && t.Values == nil {
+	if t.MaxSize == nil && t.MinSize == nil && t.Pattern == "" && t.Values == nil && t.Annotations == nil {
 		return nil
 	}
 	return t
