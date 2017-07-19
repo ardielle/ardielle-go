@@ -237,11 +237,8 @@ func (checker *validator) flattenStringConstraints(t *Type, name TypeName, patte
 
 func (checker *validator) validateString(t *Type, rawdata interface{}, context string) Validation {
 	name, pattern, values, min, max := checker.flattenStringConstraints(t, "", "", nil, nil, nil)
-	var data string
-	switch v := rawdata.(type) {
-	case string:
-		data = v
-	default:
+	data := fmt.Sprintf("%s", rawdata)
+	if strings.HasPrefix(data, "%!s") || data[0] == '&' {
 		return checker.bad(context, "Not a string", rawdata, name)
 	}
 	if min != nil {
