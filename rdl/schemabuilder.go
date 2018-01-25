@@ -6,7 +6,6 @@ package rdl
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -57,7 +56,16 @@ func (sb *SchemaBuilder) AddResource(r *Resource) *SchemaBuilder {
 	return sb
 }
 
+// Build is legacy function preserved for API compatibility.
+// Deprecated - use BuildParanoid instead, function may be removed in future releases.
 func (sb *SchemaBuilder) Build() *Schema {
+	sc, _ := sb.BuildParanoid() // ignore the error
+	return sc
+}
+
+// BuildParanoid build the schema, returns a poiner to it on success, non-nil
+// error otherwise.
+func (sb *SchemaBuilder) BuildParanoid() (*Schema, error) {
 	var ordered []*Type
 	all := make(map[string]*Type)
 	resolved := make(map[string]bool)
@@ -70,10 +78,14 @@ func (sb *SchemaBuilder) Build() *Schema {
 	}
 	for _, t := range sb.proto.Types {
 		name, super, _ := TypeInfo(t)
-		ordered = sb.resolve(ordered, resolved, all, strings.ToLower(string(name)), strings.ToLower(string(super)))
+		res, err := sb.resolve(ordered, resolved, all, strings.ToLower(string(name)), strings.ToLower(string(super)))
+		if err != nil {
+			return nil, err
+		}
+		ordered = res
 	}
 	sb.proto.Types = ordered
-	return sb.proto
+	return sb.proto, nil
 }
 
 func (sb *SchemaBuilder) isBaseType(name string) bool {
@@ -89,9 +101,9 @@ func (sb *SchemaBuilder) isBaseType(name string) bool {
 	}
 }
 
-func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all map[string]*Type, name, super string) []*Type {
+func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all map[string]*Type, name, super string) ([]*Type, error) {
 	if _, ok := resolved[name]; ok || sb.isBaseType(name) {
-		return ordered
+		return ordered, nil
 	}
 	t := all[name]
 	switch strings.ToLower(super) {
@@ -99,37 +111,60 @@ func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all 
 		//no dependencies
 	case "array":
 		if t.ArrayTypeDef != nil {
-			ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.ArrayTypeDef.Items)))
+			res, err := sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.ArrayTypeDef.Items)))
+			if err != nil {
+				return nil, err
+			}
+			ordered = res
 		}
 	case "map":
 		if t.MapTypeDef != nil {
-			ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.MapTypeDef.Items)))
-			ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.MapTypeDef.Keys)))
+			res, err := sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.MapTypeDef.Items)))
+			if err != nil {
+				return nil, err
+			}
+			ordered = res
+			res, err = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(t.MapTypeDef.Keys)))
+			if err != nil {
+				return nil, err
+			}
+			ordered = res
 		}
 	case "struct":
 		if t.StructTypeDef != nil {
 			for _, f := range t.StructTypeDef.Fields {
-				ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(f.Type)))
+				res, err := sb.resolveRef(ordered, resolved, all, strings.ToLower(string(f.Type)))
+				if err != nil {
+					return nil, err
+				}
+				ordered = res
 			}
 		}
 	default:
-		ordered = sb.resolveRef(ordered, resolved, all, strings.ToLower(string(super)))
+		res, err := sb.resolveRef(ordered, resolved, all, strings.ToLower(string(super)))
+		if err != nil {
+			return nil, err
+		}
+		ordered = res
 	}
 	resolved[name] = true
-	return append(ordered, t)
+	return append(ordered, t), nil
 }
 
-func (sb *SchemaBuilder) resolveRef(ordered []*Type, resolved map[string]bool, all map[string]*Type, ref string) []*Type {
+func (sb *SchemaBuilder) resolveRef(ordered []*Type, resolved map[string]bool, all map[string]*Type, ref string) ([]*Type, error) {
 	if !sb.isBaseType(ref) {
 		t := all[ref]
 		if t == nil {
-			log.Printf("rdl-go resolveRef error: nil Type for ref=%s", ref)
-			return nil
+			return nil, fmt.Errorf("rdl-go resolveRef error: nil Type for ref=%s", ref)
 		}
 		_, super, _ := TypeInfo(t)
-		ordered = sb.resolve(ordered, resolved, all, ref, strings.ToLower(string(super)))
+		res, err := sb.resolve(ordered, resolved, all, ref, strings.ToLower(string(super)))
+		if err != nil {
+			return nil, err
+		}
+		ordered = res
 	}
-	return ordered
+	return ordered, nil
 }
 
 func (sb *SchemaBuilder) find(ordered []*Type, name string) *Type {

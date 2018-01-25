@@ -129,6 +129,8 @@ var schemaTemplate = template.Must(template.New("").Funcs(funcMap).Parse(`// go 
 package {{ .Name }}
 
 import (
+	"log"
+
 	rdl "github.com/ardielle/ardielle-go/rdl"
 )
 
@@ -154,7 +156,11 @@ func init() {
 {{- end }}
 	sb.AddType(tStringStruct.Build())
 
-	schema = sb.Build()
+	var err error
+	schema, err = sb.BuildParanoid()
+	if err != nil {
+		log.Fatalf("sb.Build error: %s", err)
+	}
 }
 
 func {{ Title .Name -}}Schema() *rdl.Schema {
