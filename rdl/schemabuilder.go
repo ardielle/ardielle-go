@@ -6,6 +6,7 @@ package rdl
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -121,6 +122,10 @@ func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all 
 func (sb *SchemaBuilder) resolveRef(ordered []*Type, resolved map[string]bool, all map[string]*Type, ref string) []*Type {
 	if !sb.isBaseType(ref) {
 		t := all[ref]
+		if t == nil {
+			log.Printf("rdl-go resolveRef error: nil Type for ref=%s", ref)
+			return nil
+		}
 		_, super, _ := TypeInfo(t)
 		ordered = sb.resolve(ordered, resolved, all, ref, strings.ToLower(string(super)))
 	}

@@ -703,7 +703,7 @@
             "StructTypeDef": {
                 "type": "Struct",
                 "name": "Schema",
-                "comment": "A Schema is a container for types and resources. It is self-contained (no external references). and is the output of the RDL parser.",
+                "comment": "A Schema is a container for types and resources. It is self-contained (no external references) and is the output of the RDL parser.",
                 "fields": [
                     {
                         "name": "namespace",
