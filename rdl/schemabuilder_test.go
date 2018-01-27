@@ -30,7 +30,10 @@ func TestSchemaBuilder(test *testing.T) {
 	tb.Field("field1", "Timestamp", false, nil, "The timestamp field")
 	tb.Field("field2", "UUID", false, nil, "The uuid field")
 	sb.AddType(tb.Build())
-	schema = sb.Build()
+	schema, err = sb.BuildParanoid()
+	if err != nil {
+		test.Fatal(err)
+	}
 	if schema == nil {
 		test.Errorf("TestSchemaBuilder: Cannot build schema with certain base types")
 	}
@@ -154,7 +157,10 @@ func TestSBBaseTypeCaseSensitivity(test *testing.T) {
 			default:
 				test.Skipf("Basetype %s not tested", baseTypeName)
 			}
-			schema := sb.Build()
+			schema, err := sb.BuildParanoid()
+			if err != nil {
+				test.Fatal(err)
+			}
 			if schema == nil {
 				test.Errorf("TestSBBaseTypeCaseSensitivity: Cannot build schema")
 			}

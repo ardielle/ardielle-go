@@ -4,6 +4,8 @@
 
 package rdl
 
+import "log"
+
 var schema *Schema
 
 func init() {
@@ -235,7 +237,11 @@ func init() {
 	tSchema.MapField("annotations", "ExtendedAnnotation", "String", true, "additional annotations starting with \"x_\"")
 	sb.AddType(tSchema.Build())
 
-	schema = sb.Build()
+	var err error
+	schema, err = sb.BuildParanoid()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func RdlSchema() *Schema {

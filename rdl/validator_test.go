@@ -61,7 +61,10 @@ func TestValidatorCustomTypes(test *testing.T) {
 	sb.AddType(tTypeName.Build())
 
 	// Build the schema
-	schema := sb.Build()
+	schema, err := sb.BuildParanoid()
+	if err != nil {
+		test.Fatal(err)
+	}
 
 	// Types that define their own Validate can do whatever they want regarding
 	// whether a type validates or not (including not checking sub fields)
