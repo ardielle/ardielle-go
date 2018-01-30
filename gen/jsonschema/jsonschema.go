@@ -1,5 +1,6 @@
-// Copyright 2018 Lee Boynton
+// Copyright 2018 Lee Boynton (lee@boynton.com, github.com/boynton)
 // Licensed under the terms of the Apache version 2.0 license. See LICENSE file for terms.
+//
 package jsonschema
 
 //
