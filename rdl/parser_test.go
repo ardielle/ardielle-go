@@ -509,3 +509,22 @@ func TestAliasAnnotation(test *testing.T) {
 		return
 	}
 }
+
+func TestAliasAnnotation2(test *testing.T) {
+	v, err := parseRDLString(`
+	   type MyBase Struct { String message; }
+	   type MySubtype1 MyBase;
+	   type MySubtype2 MyBase (x_y);`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+		return
+	}
+	//
+	for _, td := range v.Types {
+		if td.AliasTypeDef != nil {
+			if td.AliasTypeDef.Type == "___forward_reference___" {
+				test.Errorf("Improperly parsed alias with annotations: %v", td)
+			}
+		}
+	}
+}
