@@ -1251,8 +1251,11 @@ func (p *parser) parseStructTypeSpec(typeName Identifier, supertypeName TypeRef)
 		c = p.skipWhitespaceExceptNewline()
 	}
 	if c != '{' {
-		//use generic struct type with field defs
-		return p.findType(supertypeName)
+		ta := NewAliasTypeDef()
+		ta.Name = TypeName(typeName)
+		ta.Type = TypeRef(supertypeName)
+		ta.Annotations = t.Annotations
+		return &Type{Variant: TypeVariantAliasTypeDef, AliasTypeDef: ta}
 	}
 	p.scanner.Next()
 	fcomment := ""
