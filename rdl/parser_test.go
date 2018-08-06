@@ -538,3 +538,15 @@ func TestAliasAnnotation2(test *testing.T) {
 		}
 	}
 }
+
+func TestAliasAnnotation3(test *testing.T) {
+	v, err := parseRDLString(`type MyBase Struct { String name; Struct val (x_ok); }`)
+	if err != nil {
+		test.Errorf("cannot parse valid RDL: %v", err)
+	}
+	for _, td := range v.Types {
+		if td.AliasTypeDef != nil {
+			test.Errorf("Naked struct did not survive")
+		}
+	}
+}
