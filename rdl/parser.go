@@ -1251,6 +1251,9 @@ func (p *parser) parseStructTypeSpec(typeName Identifier, supertypeName TypeRef)
 		c = p.skipWhitespaceExceptNewline()
 	}
 	if c != '{' {
+		if supertypeName == "Struct" {
+			return p.findType(supertypeName)
+		}
 		ta := NewAliasTypeDef()
 		ta.Name = TypeName(typeName)
 		ta.Type = TypeRef(supertypeName)
