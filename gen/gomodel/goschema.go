@@ -62,13 +62,13 @@ func GenerateGoSchema(banner string, schema *rdl.Schema, outdir string, ns strin
 	gen := &schemaGenerator{rdl.NewTypeRegistry(schema), schema, capitalize(string(schema.Name)), out, nil, banner, ns, librdl, rdlprefix, prefixEnums}
 	gen.emit(GenerationHeader(banner))
 	gen.emit("\n\npackage " + GenerationPackage(gen.schema, gen.ns) + "\n\n")
+	gen.emit("import (\n")
+	gen.emit("\t\"log\"\n")
+	gen.emit("\n")
 	if gen.schema.Name != "rdl" {
-		gen.emit("import (\n")
-		gen.emit("\t\"log\"\n")
-		gen.emit("\n")
 		gen.emit("\trdl \"" + librdl + "\"\n")
-		gen.emit(")\n\n")
 	}
+	gen.emit(")\n\n")
 	gen.emit("var schema *" + rdlprefix + "Schema\n\n")
 	gen.emit(fmt.Sprintf("func init() {\n\tsb := %sNewSchemaBuilder(%q)\n", rdlprefix, schema.Name))
 	if schema.Version != nil {
