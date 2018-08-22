@@ -24,13 +24,13 @@ func generate(infile, outdir string) error {
 		return nil
 	}
 	err = Generate(schema, &GeneratorParams{
-		Outdir: outdir,
-		Banner: "gomodel_test",
-		Namespace: "rdl",
+		Outdir:         outdir,
+		Banner:         "gomodel_test",
+		Namespace:      "rdl",
 		UntaggedUnions: nil,
-		LibRdl: DefaultLibRdl,
-		PrefixEnums: true,
-		PreciseTypes: true,
+		LibRdl:         DefaultLibRdl,
+		PrefixEnums:    true,
+		PreciseTypes:   true,
 	})
 	if err != nil {
 		return err
@@ -49,4 +49,3 @@ func TestModelGen(test *testing.T) {
 		return
 	}
 }
-

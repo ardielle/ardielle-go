@@ -24,8 +24,8 @@ func generate(infile, outdir string) error {
 		return nil
 	}
 	err = Generate(schema, &GeneratorParams{
-		Outdir: outdir,
-		Banner: "javamodel_test",
+		Outdir:    outdir,
+		Banner:    "javamodel_test",
 		Namespace: "com.yahoo.rdl",
 	})
 	if err != nil {

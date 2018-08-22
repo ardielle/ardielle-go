@@ -9,7 +9,6 @@ import (
 	"sort"
 	"text/template"
 
-//	genutil "github.com/ardielle/ardielle-go/gen"
 	"github.com/ardielle/ardielle-go/rdl"
 )
 
