@@ -133,11 +133,13 @@ func (sb *SchemaBuilder) resolve(ordered []*Type, resolved map[string]bool, all 
 	case "struct":
 		if t.StructTypeDef != nil {
 			for _, f := range t.StructTypeDef.Fields {
-				res, err := sb.resolveRef(ordered, resolved, all, strings.ToLower(string(f.Type)))
-				if err != nil {
-					return nil, err
+				if strings.ToLower(string(f.Type)) != strings.ToLower(string(t.StructTypeDef.Name)) {
+					res, err := sb.resolveRef(ordered, resolved, all, strings.ToLower(string(f.Type)))
+					if err != nil {
+						return nil, err
+					}
+					ordered = res
 				}
-				ordered = res
 			}
 		}
 	default:
