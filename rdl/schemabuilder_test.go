@@ -176,3 +176,30 @@ func TestSBBaseTypeCaseSensitivity(test *testing.T) {
 		})
 	}
 }
+
+func TestRecursiveStruct(t *testing.T) {
+	sb := NewSchemaBuilder("test")
+	tEmployee := NewStructTypeBuilder("Struct", "Employee")
+	tEmployee.Field("manager", "Employee", true, nil, "")
+	sb.AddType(tEmployee.Build())
+	schema, err := sb.BuildParanoid()
+	if err != nil {
+		t.Errorf("build failed: %v", err)
+	} else {
+		found := false
+		for _, t := range schema.Types {
+			if t.StructTypeDef != nil {
+				if t.StructTypeDef.Name == TypeName("Employee") {
+					if Identifier("manager") == t.StructTypeDef.Fields[0].Name {
+						if t.StructTypeDef.Fields[0].Type == TypeRef("Employee") {
+							found = true
+						}
+					}
+				}
+			}
+		}
+		if !found {
+			t.Errorf("did not find recursive field manager")
+		}
+	}
+}
