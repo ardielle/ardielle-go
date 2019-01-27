@@ -550,3 +550,10 @@ func TestAliasAnnotation3(test *testing.T) {
 		}
 	}
 }
+
+func TestUnionUnknownVariantType(test *testing.T) {
+	v, err := parseRDLString(`type MyUnion Union<Blah>;`)
+	if err == nil {
+		test.Errorf("Invalid union variant not caught: %v", v)
+	}
+}
