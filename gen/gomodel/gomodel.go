@@ -755,23 +755,32 @@ func (gen *modelGenerator) emitStructValidator(st *rdl.StructTypeDef, flattened 
 	for _, f := range flattened {
 		fname := capitalize(string(f.Name))
 		ftype := string(f.Type)
-		if !f.Optional {
-			bt := gen.registry.FindBaseType(f.Type)
-			switch bt {
-			case rdl.BaseTypeString, rdl.BaseTypeSymbol:
+		bt := gen.registry.FindBaseType(f.Type)
+		switch bt {
+		case rdl.BaseTypeString, rdl.BaseTypeSymbol:
+			if !f.Optional {
 				gen.emit(fmt.Sprintf("\tif self.%s == \"\" {\n", fname))
 				gen.emit(fmt.Sprintf("\t\treturn fmt.Errorf(\"%s.%s is missing but is a required field\")\n", st.Name, f.Name))
-				if FullValidation {
-					if bt == rdl.BaseTypeString && fname != "String" {
-						gen.emit(fmt.Sprintf("\t} else {\n\t\tval := %sValidate(%sSchema(), %q, self.%s)\n\t\tif !val.Valid {\n\t\t\treturn fmt.Errorf(\"%s.%s does not contain a valid %s (%%v)\", val.Error)\n\t\t}\n", rdlPrefix, capitalize(string(gen.schema.Name)), ftype, fname, st.Name, string(f.Name), ftype))
+			}
+			if FullValidation {
+				if bt == rdl.BaseTypeString && fname != "String" {
+					if !f.Optional {
+						gen.emit("\t} else {\n")
+					} else {
+						gen.emit(fmt.Sprintf("\tif self.%s != \"\" {\n", fname))
 					}
+					gen.emit(fmt.Sprintf("\t\tval := %sValidate(%sSchema(), %q, self.%s)\n\t\tif !val.Valid {\n\t\t\treturn fmt.Errorf(\"%s.%s does not contain a valid %s (%%v)\", val.Error)\n\t\t}\n", rdlPrefix, capitalize(string(gen.schema.Name)), ftype, fname, st.Name, string(f.Name), ftype))
 				}
-				gen.emit("\t}\n")
-			case rdl.BaseTypeTimestamp:
+			}
+			gen.emit("\t}\n")
+		case rdl.BaseTypeTimestamp:
+			if !f.Optional {
 				gen.emit(fmt.Sprintf("\tif self.%s.IsZero() {\n", fname))
 				gen.emit(fmt.Sprintf("\t\treturn fmt.Errorf(\"%s: Missing required field: %s\")\n", st.Name, f.Name))
 				gen.emit("\t}\n")
-			case rdl.BaseTypeArray, rdl.BaseTypeMap, rdl.BaseTypeStruct, rdl.BaseTypeUUID:
+			}
+		case rdl.BaseTypeArray, rdl.BaseTypeMap, rdl.BaseTypeStruct, rdl.BaseTypeUUID:
+			if !f.Optional {
 				gen.emit(fmt.Sprintf("\tif self.%s == nil {\n", fname))
 				gen.emit(fmt.Sprintf("\t\treturn fmt.Errorf(\"%s: Missing required field: %s\")\n", st.Name, f.Name))
 				gen.emit("\t}\n")
