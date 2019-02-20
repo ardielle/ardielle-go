@@ -1928,7 +1928,13 @@ func (p *parser) parseUnionTypeSpec(typeName Identifier, supertypeName TypeRef) 
 			p.error("malformed union variant list")
 			break
 		} else {
-			t.Variants = append(t.Variants, TypeRef(p.scanner.TokenText()))
+			variantType := TypeRef(p.scanner.TokenText())
+			pType := p.findType(variantType)
+			if pType == nil {
+				p.error("Undefined type: " + string(variantType))
+				return nil
+			}
+			t.Variants = append(t.Variants, variantType)
 		}
 		tok = p.scanner.Scan()
 	}
