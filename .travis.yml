@@ -9,9 +9,11 @@ go:
 
 before_install:  # generate any other needed files
   - go generate ./...
+  - find . -name '*.go' -exec gofmt -w {} \;
   
 before_script:
   - go vet ./...
+  - git diff
   - diff -u <(echo -n) <(gofmt -d .)
 
 after_success:  # run benchmarks
