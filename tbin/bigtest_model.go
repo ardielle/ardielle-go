@@ -7,11 +7,11 @@ package tbin
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/ardielle/ardielle-go/rdl"
-	"testing"
 )
 
-var _ = testing.Verbose()
+// var _ = testing.Verbose()
 var _ = json.Marshal
 var _ = fmt.Printf
 
