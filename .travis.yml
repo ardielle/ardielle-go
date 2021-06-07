@@ -1,12 +1,18 @@
 language: go
 
-go: 1.6
+go:
+  - "1.6"
+  - "1.7"
+  - "1.8"
+  - "1.9"
+  - "1.16.5"
 
 before_install:  # generate any other needed files
   - go generate ./...
   
 before_script:
   - go vet ./...
+  - diff -u <(echo -n) <(gofmt -d .)
 
 after_success:  # run benchmarks
   - go test -v -bench . -run ^$ ./...
