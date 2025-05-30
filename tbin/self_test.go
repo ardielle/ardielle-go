@@ -6,13 +6,14 @@ package tbin
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ardielle/ardielle-go/rdl"
-	"io/ioutil"
+	"os"
 	"testing"
+
+	"github.com/ardielle/ardielle-go/rdl"
 )
 
 func TestRdlSchema(test *testing.T) {
-	bytes, err := ioutil.ReadFile("../testdata/rdl_schema.json")
+	bytes, err := os.ReadFile("../testdata/rdl_schema.json")
 	if err != nil {
 		fmt.Printf("Cannot read file (rdl_schema.json): %v\n", err)
 	}
@@ -25,7 +26,7 @@ func TestRdlSchema(test *testing.T) {
 	if err != nil {
 		fmt.Printf("Cannot encode tbin: %v\n", err)
 	}
-	ioutil.WriteFile("../target/rdl_schema.tbin", tbinData, 0644)
+	os.WriteFile("../target/rdl_schema.tbin", tbinData, 0644)
 	var schema2 rdl.Schema
 	if err = Unmarshal(tbinData, &schema2); err != nil {
 		fmt.Printf("Cannot decode schema2: %v\n", err)
@@ -33,9 +34,9 @@ func TestRdlSchema(test *testing.T) {
 	if !Equal(schema, schema2) {
 		fmt.Println("Hmm, not equal. See ../target/anno*.txt")
 		anno1 := annotated(schema)
-		ioutil.WriteFile("../target/anno1.txt", []byte(anno1), 0644)
+		os.WriteFile("../target/anno1.txt", []byte(anno1), 0644)
 		anno2 := annotated(schema2)
-		ioutil.WriteFile("../target/anno2.txt", []byte(anno2), 0644)
+		os.WriteFile("../target/anno2.txt", []byte(anno2), 0644)
 	} else {
 		fmt.Println("Schemas serialize correctly with tbin")
 	}

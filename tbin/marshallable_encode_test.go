@@ -6,13 +6,13 @@ package tbin
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 //the model is generated in polyline_model.go. Here we add methods to the Polyline type
 
-//this is constant, once calculated, so could be produced from code generation
+// this is constant, once calculated, so could be produced from code generation
 var polylineSignature = Struct(Field("points", Array(Struct(Field("x", Int32, false), Field("y", Int32, false))), false))
 
 func (line Polyline) MarshalTBin(enc *Encoder) error {
@@ -36,14 +36,14 @@ func TestTBinMarshallableEncode(test *testing.T) {
 
 	jdata, err := json.Marshal(line)
 	fmt.Println("json is", len(jdata), "bytes long")
-	ioutil.WriteFile("/tmp/test_marshal.json", jdata, 0644)
+	os.WriteFile("/tmp/test_marshal.json", jdata, 0644)
 
 	tdata, err := Marshal(line)
 	if err != nil {
 		test.Errorf("Cannot marshal Polyline:, %v", err)
 	} else {
 		fmt.Println("tbin is", len(tdata), "bytes long")
-		ioutil.WriteFile("/tmp/test_marshal.tbin", tdata, 0644)
+		os.WriteFile("/tmp/test_marshal.tbin", tdata, 0644)
 		if len(tdata) != testDataLengthTBinBest {
 			test.Errorf("TBin data is not the right length. Expected %d, produced %d", testDataLengthTBinBest, len(tdata))
 		}

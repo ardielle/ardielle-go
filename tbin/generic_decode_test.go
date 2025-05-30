@@ -5,18 +5,18 @@ package tbin
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func TestTBinMarshalGenericDecode(test *testing.T) {
 	var line interface{}
-	tdata, err := ioutil.ReadFile("../testdata/test.tbin")
+	tdata, err := os.ReadFile("../testdata/test.tbin")
 	err = Unmarshal(tdata, &line)
 	if err != nil {
 		test.Errorf("Cannot unmarshal test.tbin: %v", err)
 	}
-	fromJSON, err := ioutil.ReadFile("../testdata/test.json")
+	fromJSON, err := os.ReadFile("../testdata/test.json")
 	if err != nil {
 		test.Errorf("Cannot read test.json")
 	}

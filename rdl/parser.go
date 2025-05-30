@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"path"
@@ -126,7 +125,7 @@ func (p *parser) formattedAnnotation(pos scanner.Position, msg string, warning b
 			if warning {
 				color = yellow
 			}
-			data, err := ioutil.ReadFile(pos.Filename)
+			data, err := os.ReadFile(pos.Filename)
 			if err == nil {
 				lines := strings.Split(string(data), "\n")
 				line := pos.Line - 1
@@ -493,9 +492,9 @@ func (p *parser) addTypeAnnotation(t *Type, key ExtendedAnnotation, value string
 	}
 }
 
-//prefix the type (and its constituents) with the given prefix, used when "use"ing another schema.
-//i.e. use "other.rdl" where other.rdl contains a Foo type will prefix the type "other.Foo" within the
-//type that is using it.
+// prefix the type (and its constituents) with the given prefix, used when "use"ing another schema.
+// i.e. use "other.rdl" where other.rdl contains a Foo type will prefix the type "other.Foo" within the
+// type that is using it.
 func (p *parser) prefixType(reg TypeRegistry, t *Type, prefix string) *Type {
 	pre := TypeName(prefix)
 	switch t.Variant {
@@ -1631,11 +1630,11 @@ func (p *parser) parseBytesTypeSpec(typeName Identifier, supertypeName TypeRef) 
 	return &Type{Variant: TypeVariantBytesTypeDef, BytesTypeDef: t}
 }
 
-//in the RDL grammar, a typeref is not a typespec, i.e. it must be a type name or "any".
-//to handle nested parameterized types, the grammar needs to be extended. This implies
-//that some types will be anonymous. We require names, so type names are generated with
+// in the RDL grammar, a typeref is not a typespec, i.e. it must be a type name or "any".
+// to handle nested parameterized types, the grammar needs to be extended. This implies
+// that some types will be anonymous. We require names, so type names are generated with
 // a name spelling out the items/keys. If the returned typespec is nil, that means an error,
-//not "any".
+// not "any".
 func (p *parser) typeSpec() *Type {
 	if p.err == nil {
 		tname := string(p.identifier("type name"))
