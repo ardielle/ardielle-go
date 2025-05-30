@@ -5,14 +5,14 @@ package tbin
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 )
 
 func TestTBinMarshalDecodeForceReflect(test *testing.T) {
 	var line Polyline
-	tdata, err := ioutil.ReadFile("../testdata/test.tbin")
+	tdata, err := os.ReadFile("../testdata/test.tbin")
 	r := bytes.NewBuffer(tdata)
 	dec := NewDecoder(r)
 	if false {

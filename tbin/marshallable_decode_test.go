@@ -5,7 +5,7 @@ package tbin
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -39,7 +39,7 @@ func (line *Polyline) UnmarshalTBin(dec *Decoder) error {
 
 func TestTBinMarshallableDecode(test *testing.T) {
 	var line Polyline
-	tdata, err := ioutil.ReadFile("../testdata/test.tbin")
+	tdata, err := os.ReadFile("../testdata/test.tbin")
 	err = Unmarshal(tdata, &line)
 	if err != nil {
 		test.Errorf("Cannot unmarshal test.tbin: %v", err)

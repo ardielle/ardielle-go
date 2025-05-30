@@ -5,13 +5,13 @@ package tbin
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func TestTBinMarshalGenericEncode(test *testing.T) {
 	var line interface{}
-	tdata, err := ioutil.ReadFile("../testdata/test.tbin")
+	tdata, err := os.ReadFile("../testdata/test.tbin")
 	err = Unmarshal(tdata, &line)
 	if err != nil {
 		test.Errorf("Cannot unmarshal test.tbin: %v", err)
@@ -25,6 +25,6 @@ func TestTBinMarshalGenericEncode(test *testing.T) {
 		test.Errorf("Cannot marshal generic data:, %v", err)
 	} else {
 		fmt.Println("tbin (generic) is", len(tdata2), "bytes long")
-		ioutil.WriteFile("../target/test_generic.tbin", tdata2, 0644)
+		os.WriteFile("../target/test_generic.tbin", tdata2, 0644)
 	}
 }

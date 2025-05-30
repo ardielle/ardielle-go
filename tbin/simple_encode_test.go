@@ -4,7 +4,7 @@
 package tbin
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -19,7 +19,7 @@ func TestTBinMarshalEncodeForceReflect(test *testing.T) {
 	}
 	tdata := enc.Bytes()
 
-	ioutil.WriteFile("../target/test_reflect.tbin", tdata, 0644)
+	os.WriteFile("../target/test_reflect.tbin", tdata, 0644)
 }
 
 func TestTBinMarshalEncodeForceReflect2(test *testing.T) {
@@ -35,7 +35,7 @@ func TestTBinMarshalEncodeForceReflect2(test *testing.T) {
 	if len(tdata) != 26 {
 		test.Errorf("Bad encoding, expected 26 bytes, got %d", len(tdata))
 	}
-	ioutil.WriteFile("../target/test_rect.tbin", tdata, 0644)
+	os.WriteFile("../target/test_rect.tbin", tdata, 0644)
 }
 
 func rectShape(r *Rect) *Shape {
@@ -76,7 +76,7 @@ func TestTBinMarshalEncodeForceReflect3(test *testing.T) {
 		test.Errorf("Cannot Encode: %v", err)
 	}
 	tdata := enc.Bytes()
-	ioutil.WriteFile("/tmp/test_drawing.tbin", tdata, 0644)
+	os.WriteFile("/tmp/test_drawing.tbin", tdata, 0644)
 	if len(tdata) != 107 {
 		test.Errorf("Encoding produced %d bytes, expected 107", len(tdata))
 	}

@@ -6,7 +6,7 @@ package rdl
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 )
@@ -23,7 +23,7 @@ func loadTestSchema(test *testing.T, filename string) *Schema {
 
 func loadTestData(test *testing.T, filename string) *map[string]interface{} {
 	var data map[string]interface{}
-	bytes, err := ioutil.ReadFile("../testdata/" + filename)
+	bytes, err := os.ReadFile("../testdata/" + filename)
 	if err != nil {
 		fmt.Printf("Cannot read data(%s): %v", filename, err)
 		test.Errorf("Cannot read data(%s): %v", filename, err)

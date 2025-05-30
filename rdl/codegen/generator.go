@@ -69,6 +69,7 @@ package {{ .Name }}
 import (
      "encoding/json"
      "fmt"
+
      "github.com/ardielle/ardielle-go/rdl"
 )
 

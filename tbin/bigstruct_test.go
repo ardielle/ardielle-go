@@ -7,14 +7,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 )
 
 func TestTBinTypes(test *testing.T) {
 	var bt BigTest
-	j, err := ioutil.ReadFile("../testdata/bigtest.json")
+	j, err := os.ReadFile("../testdata/bigtest.json")
 	if err != nil {
 		test.Errorf("Cannot read JSON file: %v", err)
 	}
@@ -24,12 +24,12 @@ func TestTBinTypes(test *testing.T) {
 	}
 	jj, err := json.Marshal(bt)
 	fmt.Printf("BigTest data marshaled into %d bytes of JSON\n", len(jj))
-	ioutil.WriteFile("/tmp/test_bigtest.json", jj, 0644)
+	os.WriteFile("/tmp/test_bigtest.json", jj, 0644)
 	tdata, err := Marshal(bt)
 	if err != nil {
 		test.Errorf("Cannot marshal TBin: %v", err)
 	}
-	ioutil.WriteFile("/tmp/test_bigtest.tbin", tdata, 0644)
+	os.WriteFile("/tmp/test_bigtest.tbin", tdata, 0644)
 	fmt.Printf("BigStruct data marshaled into %d bytes of tbin\n", len(tdata))
 	var g interface{}
 	err = Unmarshal(tdata, &g)
@@ -63,8 +63,8 @@ func TestTBinTypes(test *testing.T) {
 	s1 := annotated(bt)
 	s2 := annotated(bt2)
 	if s1 != s2 {
-		ioutil.WriteFile("/tmp/anno1.txt", []byte(s1), 0644)
-		ioutil.WriteFile("/tmp/anno2.txt", []byte(s2), 0644)
+		os.WriteFile("/tmp/anno1.txt", []byte(s1), 0644)
+		os.WriteFile("/tmp/anno2.txt", []byte(s2), 0644)
 		fmt.Println("Different. See /tmp/anno{1,2}.txt for details")
 		test.Errorf("Decode doesn't match original")
 	}
